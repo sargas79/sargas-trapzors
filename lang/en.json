@@ -10,11 +10,19 @@
   "SARGAS_TRAPZORS.Prompt.FireTest": "Fire as test",
   "SARGAS_TRAPZORS.Prompt.Ignore": "Ignore",
   "SARGAS_TRAPZORS.Prompt.Disable": "Disable",
-  "SARGAS_TRAPZORS.Chat.Fired": "Trap {trap} fired. Triggered by: {tokens}. (Effect area and payload arrive in later phases.)",
-  "SARGAS_TRAPZORS.Chat.FiredTest": "[TEST] Trap {trap} fired. Triggered by: {tokens}. (Effect area and payload arrive in later phases.)",
   "SARGAS_TRAPZORS.Notify.CannotFire": "The trap cannot fire right now ({reason}).",
   "SARGAS_TRAPZORS.Chat.Affected": "Affected: {tokens}",
   "SARGAS_TRAPZORS.Chat.NobodyAffected": "nobody",
   "SARGAS_TRAPZORS.Chat.NoEffectArea": "No effect area is configured for this trap (or it is missing).",
-  "SARGAS_TRAPZORS.Chat.EffectFailed": "The effect area could not be resolved (see console)."
+  "SARGAS_TRAPZORS.Chat.EffectFailed": "The effect area could not be resolved (see console).",
+  "SARGAS_TRAPZORS.Chat.Summary": "Trap {trap} fired.",
+  "SARGAS_TRAPZORS.Chat.TriggeredBy": "Triggered by: {tokens}",
+  "SARGAS_TRAPZORS.Chat.DC": "Save DC: {dc}",
+  "SARGAS_TRAPZORS.Chat.SelectAffected": "Select affected",
+  "SARGAS_TRAPZORS.Chat.NotSupported": "This payload type is not supported in this system.",
+  "SARGAS_TRAPZORS.Chat.PayloadFailed": "The payload failed (see console).",
+  "SARGAS_TRAPZORS.Payload.SaveLine": "{statistic} save",
+  "SARGAS_TRAPZORS.Payload.Basic": "(basic)",
+  "SARGAS_TRAPZORS.Notify.NoneOnScene": "None of those tokens are on the viewed scene.",
+  "SARGAS_TRAPZORS.Notify.GenericPayloads": "Sargas Trapzors: system \"{system}\" has no dedicated adapter; using generic payloads."
 }

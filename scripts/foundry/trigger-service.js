@@ -7,6 +7,8 @@ import { STATUS } from "../core/constants.js";
 import { ConfirmPrompt } from "../apps/confirm-prompt.js";
 import { isAuthority } from "./authority.js";
 import { fireEffect } from "./effect-area.js";
+import { runPayload } from "./payload-service.js";
+import { postGMSummary } from "./chat.js";
 
 let instance = null;
 
@@ -18,7 +20,6 @@ export function createTriggerService(opts) {
   return instance;
 }
 
-const esc = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 
 class TriggerService {
   /** @param {{log: ReturnType<typeof import("./logger.js").createLogger>}} opts */
@@ -117,30 +118,38 @@ class TriggerService {
 
   /* ------------------------------------------------------------ */
 
-  async #whisper(content) {
-    const whisper = ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
-    return ChatMessage.create({ content, whisper });
-  }
-
-  async #tokenNames(entries) {
-    const names = [];
-    for (const e of entries) names.push((await fromUuid(e.tokenUuid))?.name ?? e.tokenUuid);
-    return names;
-  }
-
-  /** Resolve/reveal the effect area; returns the extra whisper line (HTML-escaped plain text). */
-  async #effectLine(behavior, entries, test) {
-    const L = (k, d) => game.i18n.format(k, d);
+  /** Effect area, payload and GM summary. Never throws: failures become summary notes. */
+  async #resolveFire(behavior, entries, test) {
+    const L = (k) => game.i18n.localize(k);
+    const notes = [];
+    const trapName = behavior.region?.name || behavior.name;
+    const triggering = [];
+    for (const e of entries) {
+      const doc = await fromUuid(e.tokenUuid);
+      if (doc) triggering.push(doc);
+    }
+    let affected = [];
     try {
-      const anchor = entries[0] ? await fromUuid(entries[0].tokenUuid) : null;
-      const res = await fireEffect(behavior, anchor, { test });
-      if (!res.configured) return esc(game.i18n.localize("SARGAS_TRAPZORS.Chat.NoEffectArea"));
-      const names = res.affected.map((t) => t.name).join(", ")
-        || game.i18n.localize("SARGAS_TRAPZORS.Chat.NobodyAffected");
-      return esc(L("SARGAS_TRAPZORS.Chat.Affected", { tokens: names }));
+      const res = await fireEffect(behavior, triggering[0] ?? null, { test });
+      if (!res.configured) notes.push(L("SARGAS_TRAPZORS.Chat.NoEffectArea"));
+      affected = res.affected;
     } catch (err) {
       this.log.error("effect resolution failed", err);
-      return esc(game.i18n.localize("SARGAS_TRAPZORS.Chat.EffectFailed"));
+      notes.push(L("SARGAS_TRAPZORS.Chat.EffectFailed"));
+    }
+    let dc = null;
+    try {
+      const res = await runPayload(behavior, { affected, triggering, test, log: this.log });
+      dc = res.dc;
+      notes.push(...res.notes);
+    } catch (err) {
+      this.log.error("payload failed", err);
+      notes.push(L("SARGAS_TRAPZORS.Chat.PayloadFailed"));
+    }
+    try {
+      await postGMSummary({ trapName, triggering, affected, dc, notes, test });
+    } catch (err) {
+      this.log.error("summary failed", err);
     }
   }
 
@@ -150,7 +159,6 @@ class TriggerService {
       const behavior = await fromUuid(uuid);
       if (!behavior) return;
       const state = TriggerService.#stateOf(behavior);
-      const name = behavior.region?.name || behavior.name;
       const L = (k, d) => game.i18n.format(k, d);
 
       switch (action) {
@@ -158,22 +166,18 @@ class TriggerService {
           const tokenUuids = state.pending.map((e) => e.tokenUuid);
           const r = transition(state, { type: "fire", at: Date.now(), tokenUuids });
           if (!r.ok) return ui.notifications.warn(L("SARGAS_TRAPZORS.Notify.CannotFire", { reason: r.reason }));
-          const names = await this.#tokenNames(state.pending);
           await behavior.update({
             "system.status": r.state.status,
             "system.pending": r.state.pending,
             "system.lastFired": r.state.lastFired
           });
-          const line = await this.#effectLine(behavior, state.pending, false);
-          await this.#whisper(`${esc(L("SARGAS_TRAPZORS.Chat.Fired", { trap: name, tokens: names.join(", ") }))}<br>${line}`);
+          await this.#resolveFire(behavior, state.pending, false);
           break;
         }
         case "test": {
           const r = transition(state, { type: "fire", test: true });
           if (!r.ok) return;
-          const names = await this.#tokenNames(state.pending);
-          const line = await this.#effectLine(behavior, state.pending, true);
-          await this.#whisper(`${esc(L("SARGAS_TRAPZORS.Chat.FiredTest", { trap: name, tokens: names.join(", ") }))}<br>${line}`);
+          await this.#resolveFire(behavior, state.pending, true);
           // No state change; the prompt stays open (ConfirmPrompt keeps it open for "test").
           break;
         }
