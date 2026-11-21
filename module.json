@@ -3,6 +3,7 @@
   "title": "Sargas Trapzors",
   "description": "Region-based traps for Foundry VTT v14: movement triggers, GM-confirmed effects and optional detection.",
   "version": "0.1.0",
+  "license": "LICENSE",
   "authors": [
     {
       "name": "Diego Vescovini"

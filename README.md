@@ -15,3 +15,7 @@ npm test
 # or
 node --test "tests/**/*.test.js"
 ```
+
+## License
+
+[MIT](LICENSE)
