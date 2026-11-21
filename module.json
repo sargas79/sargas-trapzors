@@ -30,7 +30,8 @@
   "url": "https://github.com/sargas79/sargas-trapzors",
   "documentTypes": {
     "RegionBehavior": {
-      "trap": {}
+      "trap": {},
+      "trapDetection": {}
     }
   }
 }

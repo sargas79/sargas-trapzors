@@ -1,6 +1,7 @@
 // Foundry-dependent (pf2e/sf2e). Never import from tests.
 import { TrapAdapter } from "./adapter-api.js";
 import { buildDamageFormula, buildCheckSyntax, checkHazardLink } from "../core/pf2e-text.js";
+import { checkRequirements, isSuccess } from "../core/detection.js";
 import { buildSaveLine, buildRollFlavor, decideDelivery } from "../core/payload-text.js";
 
 const esc = (s) => foundry.utils.escapeHTML(String(s ?? ""));
@@ -23,7 +24,7 @@ const REASON_KEYS = {
 
 export class Pf2eAdapter extends TrapAdapter {
   get id() { return "pf2e"; }
-  get capabilities() { return { roll: true, hazard: true, detection: false }; }
+  get capabilities() { return { roll: true, hazard: true, detection: true }; }
 
   /** @param {import("./adapter-api.js").PayloadContext} ctx */
   async rollPayload({ trapName, payload, test, speaker }) {
@@ -91,6 +92,21 @@ export class Pf2eAdapter extends TrapAdapter {
     const { check } = await resolveHazard(payload);
     if (check.ok) return { ok: true };
     return { ok: false, reason: check.reason, message: L(REASON_KEYS[check.reason]) };
+  }
+
+  /**
+   * Blind Perception check for detection. Posts nothing (createMessage:false); the caller whispers the result.
+   * Degree comes from CheckRoll#degreeOfSuccess (getter over options.degreeOfSuccess, null without a DC).
+   * @returns {Promise<{skipped:string}|{total:number, degree:number|null, success:boolean}>}
+   */
+  async rollDetection({ actor, dc, requireSearch = true, minRank = 0 }) {
+    if (!actor?.perception) return { skipped: "no-perception" };
+    const isSearching = !!actor.system.exploration?.some((id) => actor.items.get(id)?.slug === "search");
+    const req = checkRequirements({ requireSearch, isSearching, minRank, rank: actor.perception.rank ?? 0 });
+    if (!req.ok) return { skipped: req.reason };
+    const roll = await actor.perception.roll({ dc: { value: dc }, skipDialog: true, createMessage: false });
+    const degree = roll.degreeOfSuccess ?? roll.options?.degreeOfSuccess ?? null;
+    return { total: roll.total, degree, success: isSuccess(degree) };
   }
 
   /** Stealth DC of the linked hazard actor (used by detection in P6). */

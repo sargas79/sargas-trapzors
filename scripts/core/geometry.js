@@ -70,3 +70,23 @@ export function anchorShapeToToken(shape, token) {
 export function rectsOverlap(a, b) {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 }
+
+const NON_BASE_TYPES = ["emanation", "ring"];
+
+/** Can this shape type be the base of an emanation (EmanationShapeData excludes emanation and ring)? */
+export function isValidEmanationBase(type) {
+  return !!type && !NON_BASE_TYPES.includes(type);
+}
+
+/**
+ * Detection area: an emanation around the trigger region's first usable shape, else around its bounds.
+ * @param {object[]} triggerShapes  plain shape data of the trigger region
+ * @param {{x:number,y:number,width:number,height:number}} bounds
+ */
+export function buildDetectionShape(triggerShapes, bounds, radiusPx, gridBased) {
+  const first = (triggerShapes ?? []).find((s) => !s.hole && isValidEmanationBase(s.type));
+  const base = first
+    ? { ...structuredClone(first), hole: false }
+    : { type: "rectangle", x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+  return { type: "emanation", base, radius: radiusPx, gridBased: !!gridBased };
+}

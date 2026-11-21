@@ -154,7 +154,7 @@ class TriggerService {
 
   /** Warn the GM and post a summary note when the payload is invalid. @returns {Promise<boolean>} true if blocked */
   async #blockedByValidation(behavior, entries, test = false) {
-    const res = await validateFirePayload(behavior);
+    const res = await validateFirePayload(behavior, this.log);
     if (res.ok) return false;
     ui.notifications.warn(res.message);
     try {
