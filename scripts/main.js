@@ -3,6 +3,7 @@ import { MODULE_ID, TRAP_TYPE } from "./core/constants.js";
 import { createLogger } from "./foundry/logger.js";
 import TrapBehaviorType from "./foundry/trap-behavior.js";
 import * as effectArea from "./foundry/effect-area.js";
+import { registerChatHooks } from "./foundry/chat.js";
 import { createTriggerService } from "./foundry/trigger-service.js";
 
 const log = createLogger({
@@ -39,6 +40,7 @@ Hooks.once("ready", () => {
   // game.user is unavailable during init, so GM-gated logging must happen here.
   log.info("ready", { version: game.modules.get(MODULE_ID)?.version });
   effectArea.cleanupReveals().catch((err) => log.error("reveal cleanup failed", err));
+  registerChatHooks();
   const service = createTriggerService({ log });
   service.recover().catch((err) => log.error("recovery failed", err));
   // Fires on connect and disconnect: authority may have moved to (or away from) this client.
