@@ -22,7 +22,11 @@ export class GenericAdapter extends TrapAdapter {
       basicSuffix: game.i18n.localize("SARGAS_TRAPZORS.Payload.Basic")
     });
     const d = decideDelivery({ test });
-    const flavor = d.prefix + buildRollFlavor({ trapName, damageType: roll.damageType, saveLine });
+    const flavor = d.prefix + buildRollFlavor({
+      trapName: foundry.utils.escapeHTML(String(trapName ?? "")),
+      damageType: foundry.utils.escapeHTML(String(roll.damageType ?? "")),
+      saveLine
+    });
     const r = new Roll(roll.damage);
     await r.evaluate();
     if (d.whisperToGMs) {

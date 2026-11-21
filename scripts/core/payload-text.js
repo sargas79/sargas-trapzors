@@ -35,13 +35,20 @@ export function buildPublicCardData({ trapName, flavorHTML, test }) {
   return { trapName, flavorHTML, whisperToGMs: d.whisperToGMs, prefix: d.prefix };
 }
 
+/** Lang key for the GM summary header. */
+export function summaryHeaderKey({ blocked = false } = {}) {
+  return blocked ? "SARGAS_TRAPZORS.Chat.Blocked" : "SARGAS_TRAPZORS.Chat.Summary";
+}
+
 /** Data for the GM-only summary. The DC appears only here. */
-export function buildSummaryData({ trapName, triggering = [], affected = [], dc = null, notes = [], test = false }) {
+export function buildSummaryData({ trapName, triggering = [], affected = [], dc = null, notes = [], test = false, blocked = false }) {
   return {
     trapName,
     triggeringNames: triggering.map((t) => t.name),
     affectedNames: affected.map((t) => t.name),
     affectedUuids: affected.map((t) => t.uuid),
+    blocked,
+    headerKey: summaryHeaderKey({ blocked }),
     dc: dc ?? null,
     notes: [...notes],
     prefix: decideDelivery({ test }).prefix

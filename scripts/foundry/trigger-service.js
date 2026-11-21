@@ -7,7 +7,7 @@ import { STATUS } from "../core/constants.js";
 import { ConfirmPrompt } from "../apps/confirm-prompt.js";
 import { isAuthority } from "./authority.js";
 import { fireEffect } from "./effect-area.js";
-import { runPayload } from "./payload-service.js";
+import { runPayload, validateFirePayload } from "./payload-service.js";
 import { postGMSummary } from "./chat.js";
 
 let instance = null;
@@ -19,7 +19,6 @@ export function createTriggerService(opts) {
   instance = new TriggerService(opts);
   return instance;
 }
-
 
 class TriggerService {
   /** @param {{log: ReturnType<typeof import("./logger.js").createLogger>}} opts */
@@ -153,6 +152,23 @@ class TriggerService {
     }
   }
 
+  /** Warn the GM and post a summary note when the payload is invalid. @returns {Promise<boolean>} true if blocked */
+  async #blockedByValidation(behavior, entries, test = false) {
+    const res = await validateFirePayload(behavior);
+    if (res.ok) return false;
+    ui.notifications.warn(res.message);
+    try {
+      const triggering = [];
+      for (const e of entries) { const d = await fromUuid(e.tokenUuid); if (d) triggering.push(d); }
+      await postGMSummary({
+        trapName: behavior.region?.name || behavior.name, triggering, affected: [], dc: null,
+        notes: [res.message, game.i18n.localize("SARGAS_TRAPZORS.Chat.StillPending")], test, blocked: true
+      });
+    } catch (err) { this.log.error("validation summary failed", err); }
+    return true;
+  }
+
+  /** @returns {Promise<"keep"|void>} "keep" leaves the prompt open. */
   async #onAction(uuid, action) {
     try {
       if (!isAuthority()) return;
@@ -163,9 +179,13 @@ class TriggerService {
 
       switch (action) {
         case "fire": {
+          if (await this.#blockedByValidation(behavior, state.pending)) return "keep";
           const tokenUuids = state.pending.map((e) => e.tokenUuid);
           const r = transition(state, { type: "fire", at: Date.now(), tokenUuids });
-          if (!r.ok) return ui.notifications.warn(L("SARGAS_TRAPZORS.Notify.CannotFire", { reason: r.reason }));
+          if (!r.ok) {
+            ui.notifications.warn(L("SARGAS_TRAPZORS.Notify.CannotFire", { reason: r.reason }));
+            return;
+          }
           await behavior.update({
             "system.status": r.state.status,
             "system.pending": r.state.pending,
@@ -177,6 +197,7 @@ class TriggerService {
         case "test": {
           const r = transition(state, { type: "fire", test: true });
           if (!r.ok) return;
+          if (await this.#blockedByValidation(behavior, state.pending, true)) return "keep";
           await this.#resolveFire(behavior, state.pending, true);
           // No state change; the prompt stays open (ConfirmPrompt keeps it open for "test").
           break;

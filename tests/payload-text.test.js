@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildSaveLine, buildRollFlavor, decideDelivery, isEmptyFlavor, buildPublicCardData, buildSummaryData } from "../scripts/core/payload-text.js";
+import { buildSaveLine, buildRollFlavor, decideDelivery, isEmptyFlavor, buildPublicCardData, buildSummaryData, summaryHeaderKey } from "../scripts/core/payload-text.js";
 import { selectAdapter } from "../scripts/adapters/registry.js";
 import { TrapAdapter, UnsupportedPayloadError } from "../scripts/adapters/adapter-api.js";
 
@@ -57,4 +57,11 @@ test("base adapter throws typed errors", async () => {
   await assert.rejects(a.postHazardAction({}), (e) => e.operation === "postHazardAction");
   assert.throws(() => a.getStealthDC({}), UnsupportedPayloadError);
   assert.deepEqual(a.capabilities, { roll: false, hazard: false, detection: false });
+});
+
+test("summary header and blocked flag", () => {
+  assert.equal(summaryHeaderKey({}), "SARGAS_TRAPZORS.Chat.Summary");
+  assert.equal(summaryHeaderKey({ blocked: true }), "SARGAS_TRAPZORS.Chat.Blocked");
+  assert.equal(buildSummaryData({ trapName: "T", blocked: true }).headerKey, "SARGAS_TRAPZORS.Chat.Blocked");
+  assert.equal(buildSummaryData({ trapName: "T" }).blocked, false);
 });

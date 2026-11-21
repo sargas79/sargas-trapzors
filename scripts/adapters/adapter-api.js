@@ -39,6 +39,13 @@ export class TrapAdapter {
   /** @param {object} ctx @returns {number|null} */
   getStealthDC(ctx) { throw new UnsupportedPayloadError(this.id, "getStealthDC"); }
 
+  /**
+   * Check a payload before firing (e.g. a broken hazard link). May be sync or async.
+   * @param {object} payload
+   * @returns {{ok:true}|{ok:false, reason:string, message:string}|Promise<{ok:boolean, reason?:string, message?:string}>}
+   */
+  validatePayload(payload) { return { ok: true }; }
+
   /** @returns {{dispositions:number[], actorTypes:string[]|null}} */
   eligibilityDefaults() { return { dispositions: [1], actorTypes: null }; }
 }
