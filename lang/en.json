@@ -1,0 +1,20 @@
+{
+  "SARGAS_TRAPZORS.Settings.Debug.Name": "Debug logging",
+  "SARGAS_TRAPZORS.Settings.Debug.Hint": "Log trap diagnostics to the browser console. Only active for GM users.",
+  "TYPES.RegionBehavior.sargas-trapzors.trap": "Trap",
+  "SARGAS_TRAPZORS.Behavior.trap.label": "Trap",
+  "SARGAS_TRAPZORS.Prompt.Title": "Trap triggered",
+  "SARGAS_TRAPZORS.Prompt.Body": "Trap \"{trap}\" in scene \"{scene}\" has been triggered.",
+  "SARGAS_TRAPZORS.Prompt.Tokens": "Triggered by:",
+  "SARGAS_TRAPZORS.Prompt.Fire": "Fire",
+  "SARGAS_TRAPZORS.Prompt.FireTest": "Fire as test",
+  "SARGAS_TRAPZORS.Prompt.Ignore": "Ignore",
+  "SARGAS_TRAPZORS.Prompt.Disable": "Disable",
+  "SARGAS_TRAPZORS.Chat.Fired": "Trap {trap} fired. Triggered by: {tokens}. (Effect area and payload arrive in later phases.)",
+  "SARGAS_TRAPZORS.Chat.FiredTest": "[TEST] Trap {trap} fired. Triggered by: {tokens}. (Effect area and payload arrive in later phases.)",
+  "SARGAS_TRAPZORS.Notify.CannotFire": "The trap cannot fire right now ({reason}).",
+  "SARGAS_TRAPZORS.Chat.Affected": "Affected: {tokens}",
+  "SARGAS_TRAPZORS.Chat.NobodyAffected": "nobody",
+  "SARGAS_TRAPZORS.Chat.NoEffectArea": "No effect area is configured for this trap (or it is missing).",
+  "SARGAS_TRAPZORS.Chat.EffectFailed": "The effect area could not be resolved (see console)."
+}

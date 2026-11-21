@@ -1,0 +1,35 @@
+{
+  "id": "sargas-trapzors",
+  "title": "Sargas Trapzors",
+  "description": "Region-based traps for Foundry VTT v14: movement triggers, GM-confirmed effects and optional detection.",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Diego Vescovini"
+    }
+  ],
+  "compatibility": {
+    "minimum": "14.361",
+    "verified": "14.370",
+    "maximum": "14"
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/sargas-trapzors.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "url": "https://github.com/sargas79/sargas-trapzors",
+  "documentTypes": {
+    "RegionBehavior": {
+      "trap": {}
+    }
+  }
+}
