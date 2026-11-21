@@ -16,14 +16,15 @@ export async function postPublicCard({ trapName, flavorHTML, test = false }) {
 }
 
 /** GM-only summary: tokens, DC, notes and a Select affected button. */
-export async function postGMSummary({ trapName, triggering, affected, dc, notes, test = false }) {
-  const d = buildSummaryData({ trapName, triggering, affected, dc, notes, test });
+export async function postGMSummary({ trapName, triggering, affected, dc, notes, test = false, blocked = false }) {
+  const d = buildSummaryData({ trapName, triggering, affected, dc, notes, test, blocked });
   const none = L("SARGAS_TRAPZORS.Chat.NobodyAffected");
   const parts = [
-    `<p><strong>${esc(d.prefix)}${esc(L("SARGAS_TRAPZORS.Chat.Summary", { trap: d.trapName }))}</strong></p>`,
-    `<p>${esc(L("SARGAS_TRAPZORS.Chat.TriggeredBy", { tokens: d.triggeringNames.join(", ") || none }))}</p>`,
-    `<p>${esc(L("SARGAS_TRAPZORS.Chat.Affected", { tokens: d.affectedNames.join(", ") || none }))}</p>`
+    `<p><strong>${esc(d.prefix)}${esc(L(d.headerKey, { trap: d.trapName }))}</strong></p>`,
+    `<p>${esc(L("SARGAS_TRAPZORS.Chat.TriggeredBy", { tokens: d.triggeringNames.join(", ") || none }))}</p>`
   ];
+  // A blocked fire resolved nothing, so there is no affected line.
+  if (!d.blocked) parts.push(`<p>${esc(L("SARGAS_TRAPZORS.Chat.Affected", { tokens: d.affectedNames.join(", ") || none }))}</p>`);
   if (d.dc != null) parts.push(`<p>${esc(L("SARGAS_TRAPZORS.Chat.DC", { dc: d.dc }))}</p>`);
   for (const n of d.notes) parts.push(`<p><em>${esc(n)}</em></p>`);
   if (d.affectedUuids.length) {

@@ -55,10 +55,11 @@ export class ConfirmPrompt {
         { action: "disable", label: "SARGAS_TRAPZORS.Prompt.Disable", icon: "fa-solid fa-power-off" }
       ],
       form: { closeOnSubmit: false },
-      // Test fire leaves the trap pending, so its prompt stays open; every other action closes it.
+      // Every action closes the prompt unless it reports otherwise.
       submit: async (result) => {
-        await onAction(result);
-        if (result !== "test") await this.dialog.close();
+        const outcome = await onAction(result);
+        // "test" and a blocked fire (outcome "keep") leave the trap pending, so the prompt stays open.
+        if (result !== "test" && outcome !== "keep") await this.dialog.close();
       }
     });
     this.dialog.bodyHTML = foundry.utils.cleanHTML(ConfirmPrompt.#content(data));

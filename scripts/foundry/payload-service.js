@@ -1,11 +1,12 @@
 // Foundry-dependent. Never import from tests.
 import { selectAdapter } from "../adapters/registry.js";
 import { GenericAdapter } from "../adapters/generic.js";
+import { Pf2eAdapter } from "../adapters/pf2e.js";
 import { postPublicCard } from "./chat.js";
 
 const generic = new GenericAdapter();
-// P5b replaces these two entries with the pf2e/sf2e adapter.
-const REGISTRY = { generic, bySystem: { pf2e: generic, sf2e: generic } };
+const pf2e = new Pf2eAdapter();
+const REGISTRY = { generic, bySystem: { pf2e, sf2e: pf2e } };
 
 let warned = false;
 
@@ -60,4 +61,14 @@ export async function runPayload(behavior, { affected, triggering, test, log }) 
     notes.push(L("SARGAS_TRAPZORS.Chat.PayloadFailed"));
   }
   return { dc, notes };
+}
+
+/** Pre-fire payload validation (e.g. deleted hazard). @returns {Promise<{ok:boolean, message?:string}>} */
+export async function validateFirePayload(behavior) {
+  const payload = behavior.system.toObject().payload;
+  try {
+    return await getAdapter().validatePayload(payload);
+  } catch {
+    return { ok: true };
+  }
 }

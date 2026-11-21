@@ -24,5 +24,10 @@
   "SARGAS_TRAPZORS.Payload.SaveLine": "{statistic} save",
   "SARGAS_TRAPZORS.Payload.Basic": "(basic)",
   "SARGAS_TRAPZORS.Notify.NoneOnScene": "None of those tokens are on the viewed scene.",
-  "SARGAS_TRAPZORS.Notify.GenericPayloads": "Sargas Trapzors: system \"{system}\" has no dedicated adapter; using generic payloads."
+  "SARGAS_TRAPZORS.Notify.GenericPayloads": "Sargas Trapzors: system \"{system}\" has no dedicated adapter; using generic payloads.",
+  "SARGAS_TRAPZORS.Pf2e.HazardMissingActor": "The linked hazard actor no longer exists.",
+  "SARGAS_TRAPZORS.Pf2e.HazardMissingItem": "The linked hazard action no longer exists on that actor.",
+  "SARGAS_TRAPZORS.Pf2e.HazardNotAction": "The linked hazard item is not an action (strikes are not supported yet).",
+  "SARGAS_TRAPZORS.Chat.StillPending": "The trap did not fire and is still pending.",
+  "SARGAS_TRAPZORS.Chat.Blocked": "Trap {trap} could not fire."
 }
