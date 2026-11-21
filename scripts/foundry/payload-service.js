@@ -64,11 +64,12 @@ export async function runPayload(behavior, { affected, triggering, test, log }) 
 }
 
 /** Pre-fire payload validation (e.g. deleted hazard). @returns {Promise<{ok:boolean, message?:string}>} */
-export async function validateFirePayload(behavior) {
+export async function validateFirePayload(behavior, log) {
   const payload = behavior.system.toObject().payload;
   try {
     return await getAdapter().validatePayload(payload);
-  } catch {
+  } catch (err) {
+    log?.error("payload validation threw", err);
     return { ok: true };
   }
 }

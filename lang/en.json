@@ -29,5 +29,16 @@
   "SARGAS_TRAPZORS.Pf2e.HazardMissingItem": "The linked hazard action no longer exists on that actor.",
   "SARGAS_TRAPZORS.Pf2e.HazardNotAction": "The linked hazard item is not an action (strikes are not supported yet).",
   "SARGAS_TRAPZORS.Chat.StillPending": "The trap did not fire and is still pending.",
-  "SARGAS_TRAPZORS.Chat.Blocked": "Trap {trap} could not fire."
+  "SARGAS_TRAPZORS.Chat.Blocked": "Trap {trap} could not fire.",
+  "TYPES.RegionBehavior.sargas-trapzors.trapDetection": "Trap Detection",
+  "SARGAS_TRAPZORS.Behavior.trapDetection.label": "Trap Detection",
+  "SARGAS_TRAPZORS.Detection.Noticed": "{token} noticed {trap} (Perception {total} vs DC {dc}).",
+  "SARGAS_TRAPZORS.Detection.NotNoticed": "{token} did not notice {trap} ({total} vs DC {dc}).",
+  "SARGAS_TRAPZORS.Detection.Reveal": "Reveal",
+  "SARGAS_TRAPZORS.Detection.Skipped": "{token} could not check for {trap}: {reason}",
+  "SARGAS_TRAPZORS.Detection.SkipNotSearching": "not using the Search activity",
+  "SARGAS_TRAPZORS.Detection.SkipRank": "Perception rank too low",
+  "SARGAS_TRAPZORS.Detection.SkipNoPerception": "no Perception statistic",
+  "SARGAS_TRAPZORS.Detection.SkipNoDC": "no detection DC is configured",
+  "SARGAS_TRAPZORS.Detection.Unsupported": "Sargas Trapzors: trap detection is only available in Pathfinder 2e and Starfinder 2e."
 }

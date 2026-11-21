@@ -45,14 +45,41 @@ function selectTokens(uuids) {
   for (const t of docs) t.object?.control({ releaseOthers: false });
 }
 
-/** Wire the Select affected button. Call once from ready. */
-export function registerChatHooks() {
+/** GM-only detection result. Plain content (no rolls field), so players see no placeholder. */
+export async function postDetectionResult({ token, trapName, trapUuid, total, dc, success }) {
+  const key = success ? "SARGAS_TRAPZORS.Detection.Noticed" : "SARGAS_TRAPZORS.Detection.NotNoticed";
+  let content = `<p>${esc(L(key, { token, trap: trapName, total, dc }))}</p>`;
+  if (success) {
+    content += `<button type="button" data-action="sargas-trapzors-reveal" data-trap-uuid="${esc(trapUuid)}">`
+      + `<i class="fa-solid fa-eye"></i> ${esc(L("SARGAS_TRAPZORS.Detection.Reveal"))}</button>`;
+  }
+  return ChatMessage.create({ content, whisper: gmIds(), speaker: ChatMessage.getSpeaker({ alias: trapName }) });
+}
+
+/** Short GM-only note (skipped checks etc.). */
+export async function postDetectionNote(text) {
+  return ChatMessage.create({ content: `<p><em>${esc(text)}</em></p>`, whisper: gmIds() });
+}
+
+/**
+ * Wire chat buttons. Call once from ready.
+ * @param {{onReveal:(trapUuid:string)=>Promise<void>}} handlers
+ */
+export function registerChatHooks({ onReveal } = {}) {
   Hooks.on("renderChatMessageHTML", (message, html) => {
     if (!game.user.isGM) return;
     html.querySelectorAll('[data-action="sargas-trapzors-select"]').forEach((btn) => {
       btn.addEventListener("click", (ev) => {
         ev.preventDefault();
         selectTokens((btn.dataset.tokenUuids ?? "").split(",").filter(Boolean));
+      });
+    });
+    html.querySelectorAll('[data-action="sargas-trapzors-reveal"]').forEach((btn) => {
+      btn.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        btn.disabled = true;
+        try { await onReveal?.(btn.dataset.trapUuid); }
+        catch (err) { btn.disabled = false; ui.notifications.error(String(err?.message ?? err)); }
       });
     });
   });

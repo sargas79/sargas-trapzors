@@ -23,3 +23,13 @@ export function validateTokenInRegion(token, region) {
   try { insideRegion = !!live.testInsideRegion(region); } catch { insideRegion = false; }
   return { tokenExists: true, insideRegion };
 }
+
+/** Eligibility input (plain data) from a TokenDocument. */
+export function tokenEligibilityInput(token) {
+  return {
+    hasActor: !!token.actor,
+    hidden: !!token.hidden,
+    disposition: token.disposition,
+    actorType: token.actor?.type ?? null
+  };
+}
