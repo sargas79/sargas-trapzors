@@ -2,7 +2,7 @@
   "id": "sargas-trapzors",
   "title": "Sargas Trapzors",
   "description": "Region-based traps for Foundry VTT v14: movement triggers, GM-confirmed effects and optional detection.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "LICENSE",
   "authors": [
     {
@@ -30,7 +30,7 @@
   ],
   "url": "https://github.com/sargas79/sargas-trapzors",
   "manifest": "https://github.com/sargas79/sargas-trapzors/releases/latest/download/module.json",
-  "download": "https://github.com/sargas79/sargas-trapzors/releases/download/v0.3.0/module.zip",
+  "download": "https://github.com/sargas79/sargas-trapzors/releases/download/v0.4.0/module.zip",
   "readme": "https://github.com/sargas79/sargas-trapzors/blob/main/README.md",
   "bugs": "https://github.com/sargas79/sargas-trapzors/issues",
   "changelog": "https://github.com/sargas79/sargas-trapzors/blob/main/CHANGELOG.md",

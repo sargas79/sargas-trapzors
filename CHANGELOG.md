@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — 2026-11-22
 
 ### Added
 
@@ -26,6 +26,19 @@
 
 - Chat buttons (Reveal, Select tokens, the routine card's buttons) now work on messages rendered before the module was ready, such as the chat history after a reload.
 - A trap with **Blocked by walls** that fired while the GM viewed another scene hit nobody (a wall-restricted area that cannot be clipped contains nothing). The area is now used unclipped, as the GM note says.
+
+### Known limitations
+
+- Not yet tested live:
+  - sf2e complex hazards, hazard strikes and detection;
+  - hazards with several strikes;
+  - two GMs online at once;
+  - the free JB2A;
+  - a party with members (the test world's Party was empty);
+  - firing a trap stored on another scene when it has an effect area or an encounter;
+  - the renamed `sargas-victory-counter` id, which isn't released yet.
+- In pf2e, line, cone and circle areas never hit tokens through a wall, whatever **Blocked by walls** says. pf2e checks walls itself for those shapes.
+- Victory Counter triggers and effects need the active GM online.
 
 ## 0.3.0 — 2026-11-22
 
