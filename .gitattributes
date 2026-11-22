@@ -1,0 +1,9 @@
+# Files excluded from the module zip built with `git archive` (see tools/package.sh).
+tests/ export-ignore
+docs/ export-ignore
+tools/ export-ignore
+.github/ export-ignore
+.claude/ export-ignore
+package.json export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
