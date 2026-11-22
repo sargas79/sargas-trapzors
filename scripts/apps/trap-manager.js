@@ -11,6 +11,7 @@ import { filterHazards, sortHazards } from "../core/hazard-browser.js";
 import { rearmRemaining, formatDuration } from "../core/hazard-info.js";
 import { L, statusInfo, trapName, debounce, relativeTime, firstControlledToken } from "./ui-helpers.js";
 import { createTrapFromHazard } from "./scene-controls.js";
+import { FireAtDialog } from "./fire-at-dialog.js";
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 const HOOKS = ["createRegion", "updateRegion", "deleteRegion", "createRegionBehavior", "updateRegionBehavior",
@@ -82,6 +83,8 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
   static #instance = null;
   #hookIds = [];
   #menuUuid = null;
+  /** "scene" lists the viewed scene's traps, "all" every scene's. */
+  #scope = "scene";
   #filter = "";
   // Compendium tab state. The index itself is cached in the adapter; this is the sorted copy plus UI state.
   #index = null;
@@ -108,6 +111,9 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
     actions: {
       fire: this.#act("fire"),
       test: this.#act("test"),
+      fireAt: this.#act("fireAt"),
+      detectCheck: this.#act("detectCheck"),
+      setScope: this.#onSetScope,
       openPrompt: this.#act("openPrompt"),
       edit: this.#act("edit"),
       reset: this.#act("reset"),
@@ -154,13 +160,23 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!game.user.isGM) throw new Error(L("SARGAS_TRAPZORS.Config.GMOnly"));
   }
 
-  /** Every trap behavior on the viewed scene. */
-  static #traps() {
+  /** Every trap behavior on the viewed scene, or on every scene when the scope is "all". */
+  #traps() {
     const out = [];
-    for (const region of canvas.scene?.regions ?? []) {
-      for (const b of region.behaviors) if (b.type === TRAP_TYPE) out.push(b);
+    const scenes = this.#scope === "all" ? game.scenes.contents : [canvas.scene].filter(Boolean);
+    for (const scene of scenes) {
+      for (const region of scene.regions) {
+        for (const b of region.behaviors) if (b.type === TRAP_TYPE) out.push(b);
+      }
     }
     return out;
+  }
+
+  static #onSetScope(event, target) {
+    const scope = target.dataset.scope === "all" ? "all" : "scene";
+    if (scope === this.#scope) return;
+    this.#scope = scope;
+    this.render({ parts: ["scene"] });
   }
 
   /** @override */
@@ -168,20 +184,25 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
     const context = await super._prepareContext(options);
     this.#menuUuid = null; // a re-render replaces the DOM, so any open popover menu is gone
     const token = firstControlledToken();
-    const rows = TrapManager.#traps().map((b) => {
+    const allScenes = this.#scope === "all";
+    const rows = this.#traps().map((b) => {
       const links = getLinkStatus(b);
       const broken = [links.effect, links.detection].some((s) => s === "missing" || s === "foreign");
       const status = statusInfo(b);
       const name = trapName(b);
+      const onScene = b.scene?.id === canvas.scene?.id;
       return {
         uuid: b.uuid,
         name,
+        onScene,
+        sceneName: allScenes ? (b.scene?.name ?? "") : "",
         key: name.toLowerCase(),
         sub: subline(b),
         status,
         disabled: !!b.disabled,
         revealed: !!b.system.revealed,
         inEncounter: !!b.system.encounter?.tokenId,
+        canDetect: !!getAdapter().capabilities.detection,
         isHazard: b.system.payload.kind === "hazard" && !!b.system.payload.hazard.actorUuid,
         pending: status.key === "pending" && !b.disabled,
         kind: L(`SARGAS_TRAPZORS.Config.Kind.${b.system.payload.kind}`),
@@ -209,6 +230,8 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
       rows,
       filter: this.#filter,
       hasScene: !!canvas.scene,
+      allScenes,
+      scopes: ["scene", "all"].map((v) => ({ value: v, on: v === this.#scope, label: L(`SARGAS_TRAPZORS.Manager.Scope.${v}`) })),
       summary: L("SARGAS_TRAPZORS.Manager.Summary", {
         traps: rows.length, pending: rows.filter((r) => r.pending).length, broken: brokenCount
       }),
@@ -327,7 +350,7 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
       let scene = null;
       if (doc?.documentName === "Region") scene = doc.parent;
       else if (doc?.documentName === "RegionBehavior") scene = doc.parent?.parent;
-      if (!scene || scene.id === sceneId()) rerender();
+      if (!scene || this.#scope === "all" || scene.id === sceneId()) rerender();
     };
     for (const hook of HOOKS) this.#hookIds.push([hook, Hooks.on(hook, handler)]);
 
@@ -425,12 +448,14 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
         return pending ? service?.runAction(b.uuid, "fire") : service?.manualFire(b, { token });
       case "test":
         return pending ? service?.runAction(b.uuid, "test") : service?.manualFire(b, { test: true, token });
+      case "fireAt": return FireAtDialog.open(b, "fire");
+      case "detectCheck": return FireAtDialog.open(b, "detect");
       case "openPrompt": return service?.openPrompt(b);
       case "reset": return service?.reset(b);
       case "enable": return service?.setEnabled(b, true);
       case "disable": return service?.setEnabled(b, false);
       case "repair": return repairLinks(b);
-      case "preview": return previewEffect(b);
+      case "preview": return b.scene?.id === canvas.scene?.id ? previewEffect(b) : undefined;
       case "disableChecks": {
         const actor = await fromUuid(b.system.payload.hazard.actorUuid);
         const html = actor ? getAdapter().getDisableHTML(actor) : "";
@@ -441,6 +466,7 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
       case "duplicate": return duplicateTrap(b);
       case "delete": return deleteTrap(b);
       case "pan": {
+        if (b.scene?.id !== canvas.scene?.id) return;
         const r = b.region?.bounds;
         if (r) await canvas.animatePan({ x: r.x + r.width / 2, y: r.y + r.height / 2 });
         return;

@@ -12,6 +12,7 @@ import { ANIMATION_PRESETS, ANIMATION_GROUPS, ANIMATION_MODES, presetsByGroup } 
 import { createDetectionArea, reveal } from "../foundry/detection-service.js";
 import { getLinkStatus, repairLinks } from "../foundry/linked-regions.js";
 import { getTriggerService } from "../foundry/trigger-service.js";
+import { FireAtDialog } from "./fire-at-dialog.js";
 import { L, statusInfo, options as toOptions, debounce, linkView, confirmReplace, trapName, relativeTime, firstControlledToken } from "./ui-helpers.js";
 
 const { HandlebarsApplicationMixin, DocumentSheetV2 } = foundry.applications.api;
@@ -43,6 +44,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       createDetection: this.#onCreateDetection,
       revealTrap: this.#onReveal,
       testFire: this.#onTestFire,
+      fireAt: this.#onFireAt,
       browseSound: this.#onBrowseSound,
       configureFromHazard: this.#onConfigureFromHazard
     }
@@ -522,6 +524,8 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     if (b.system.status === "pending") await service.runAction(b.uuid, "test");
     else await service.manualFire(b, { test: true, token: firstControlledToken()?.document ?? null });
   }
+
+  static #onFireAt() { FireAtDialog.open(this.document, "fire"); }
 
   static async #onReveal() {
     try { await reveal(this.document); } catch (err) { ui.notifications.error(err.message, { console: false }); }

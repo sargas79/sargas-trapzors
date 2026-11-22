@@ -2,6 +2,9 @@
 <div class="st-manager">
   <div class="st-toolbar">
     <input type="search" name="filter" value="{{filter}}" placeholder="{{localize "SARGAS_TRAPZORS.Manager.Filter"}}" aria-label="{{localize "SARGAS_TRAPZORS.Manager.Filter"}}">
+    <span class="st-scope" role="group" aria-label="{{localize "SARGAS_TRAPZORS.Manager.Scope.label"}}">
+      {{#each scopes}}<button type="button" class="{{#if on}}st-on{{/if}}" data-action="setScope" data-scope="{{value}}" aria-pressed="{{#if on}}true{{else}}false{{/if}}">{{label}}</button>{{/each}}
+    </span>
     <span class="st-muted st-summary">{{summary}}</span>
     <span class="st-chip {{#if hasAnchor}}st-chip-on{{/if}}"><i class="fa-solid fa-crosshairs" inert></i> {{anchorChip}}</span>
   </div>
@@ -11,6 +14,7 @@
     <div class="st-row {{#if pending}}st-row-pending{{/if}} {{#if disabled}}st-row-disabled{{/if}}" data-uuid="{{uuid}}" data-name="{{key}}" {{#if hidden}}hidden{{/if}}>
       <div class="st-cell st-cell-name">
         <strong class="st-name">{{name}}</strong>
+        {{#if sceneName}}<span class="st-muted st-scene-tag"><i class="fa-solid fa-map" inert></i> {{sceneName}}</span>{{/if}}
         {{#if sub}}<span class="st-muted">{{sub}}</span>{{/if}}
       </div>
       <div class="st-cell">
@@ -35,8 +39,10 @@
         <span class="st-menu-wrap">
           <button type="button" class="icon fa-solid fa-ellipsis" data-action="toggleMenu" aria-haspopup="menu" aria-expanded="{{#if menuOpen}}true{{else}}false{{/if}}" aria-label="{{localize "SARGAS_TRAPZORS.Manager.MoreActions" name=name}}"></button>
           <div class="st-menu" role="menu" popover="manual">
-            <button type="button" role="menuitem" data-action="pan"><i class="fa-solid fa-location-crosshairs" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.pan"}}</button>
-            <button type="button" role="menuitem" data-action="preview"><i class="fa-solid fa-eye" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.preview"}}</button>
+            <button type="button" role="menuitem" data-action="fireAt"><i class="fa-solid fa-bullseye" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.fireAt"}}</button>
+            {{#if canDetect}}<button type="button" role="menuitem" data-action="detectCheck"><i class="fa-solid fa-magnifying-glass" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.detectCheck"}}</button>{{/if}}
+            <button type="button" role="menuitem" data-action="pan" {{#unless onScene}}disabled data-tooltip="{{localize "SARGAS_TRAPZORS.Manager.OtherScene"}}"{{/unless}}><i class="fa-solid fa-location-crosshairs" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.pan"}}</button>
+            <button type="button" role="menuitem" data-action="preview" {{#unless onScene}}disabled data-tooltip="{{localize "SARGAS_TRAPZORS.Manager.OtherScene"}}"{{/unless}}><i class="fa-solid fa-eye" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.preview"}}</button>
             {{#if isHazard}}<button type="button" role="menuitem" data-action="disableChecks"><i class="fa-solid fa-unlock-keyhole" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.disableChecks"}}</button>{{/if}}
             {{#if inEncounter}}<button type="button" role="menuitem" data-action="endHazard"><i class="fa-solid fa-flag-checkered" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.endHazard"}}</button>{{/if}}
             <button type="button" role="menuitem" data-action="duplicate"><i class="fa-solid fa-copy" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.duplicate"}}</button>
@@ -47,7 +53,7 @@
       </div>
     </div>
     {{else}}
-    <p class="st-empty st-muted">{{#if hasScene}}{{localize "SARGAS_TRAPZORS.Manager.Empty"}}{{else}}{{localize "SARGAS_TRAPZORS.Manager.NoScene"}}{{/if}}</p>
+    <p class="st-empty st-muted">{{#if allScenes}}{{localize "SARGAS_TRAPZORS.Manager.EmptyAll"}}{{else if hasScene}}{{localize "SARGAS_TRAPZORS.Manager.Empty"}}{{else}}{{localize "SARGAS_TRAPZORS.Manager.NoScene"}}{{/if}}</p>
     {{/each}}
   </div>
 </div>

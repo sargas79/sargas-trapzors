@@ -38,6 +38,16 @@ Then enable **Sargas Trapzors** in your world.
 5. **Manage traps** with the **Trap Manager** tool on the Region layer: statuses, Fire / Test / Open prompt / Edit / Reset / Enable / Disable, Pan to trap, Preview effect area, Duplicate, Delete trap and its areas, **Repair links** when a linked region was deleted. A trap whose hazard is in an encounter shows an **In encounter** badge and an **End hazard** menu item.
 6. **Reset** a spent trap from the Lifecycle tab or the Trap Manager to arm it again.
 
+## Theater of the mind
+
+You can fire a trap, or run its detection check, at chosen characters without moving any token.
+
+- **Fire at…** is in the Trap Manager row menu and next to Test fire on the trap sheet. The picker lists the party's members (the pf2e Party actor), other characters owned by players, and the tokens you have targeted or selected on the current scene; everything starts unchecked. If an actor is also shown as a token, only the token is listed. **Fire as test (GM only)** whispers everything to GMs and changes nothing.
+- A real fire skips the map effect area: the chosen targets are the affected creatures, the GM summary lists them, and the trap's state changes as for any manual fire (Spent, or armed again when Reusable).
+- Flavor, sound, damage and save, and hazard actions work as usual. A **hazard strike** at a token on the viewed scene rolls as before. For a character with no token (or a token on another scene) the strike is rolled with no target: the public attack card shows no hit or miss, and GMs get a whispered line with the total against the actor's AC and the degree of success the module worked out (natural 20 and 1 included). Your targeted tokens are released for that roll and restored afterwards.
+- **Detection check…** rolls each chosen character's Perception against the trap's Stealth DC with the usual rules (Search requirement, minimum rank, one check per target; a token's check is stored under the token, an actor's under the actor) and posts the usual GM result with **Reveal** and the disable checks.
+- The Trap Manager has a **This scene** / **All scenes** switch. **All scenes** lists every scene's traps, so you can keep traps on an unused "library" scene and fire them from anywhere. **Pan to trap** and **Preview effect area** are disabled for traps on other scenes.
+
 ## Concepts
 
 - **Trigger area vs effect area vs payload.** The *trigger area* is the region that stops tokens and starts the prompt. The *effect area* is a separate linked region (line, cone or emanation) used only to decide who is affected. The *payload* is what gets posted to chat.
@@ -73,7 +83,8 @@ Traps can play a video animation over their effect area when they fire. This is 
 ## Known limitations
 
 - **Detection works only in pf2e and sf2e.** In other systems it is unavailable.
-- **Hazard strikes need the GM on the trap's scene.** The strike is rolled on the active GM's client, which must be viewing the scene the trap is on; otherwise each target is skipped and the GM gets a notice.
+- **Hazard strikes need the GM on the trap's scene for map targets.** A strike against a token is rolled on the active GM's client, which must be viewing that token's scene. Characters with no token (Fire at…) are rolled without a target, so the public attack card shows no degree; only the GM's whispered line does. Routine-card strikes against tokens on other scenes are rolled the same way.
+- **Theater of the mind** (Fire at… and Detection check…) needs the active GM. Not yet tested live: sf2e, and firing a trap that is stored on another scene when it has an effect area or an encounter (the map effect area is skipped; an encounter only adds tokens on the trap's scene).
 - **Blocked by walls** needs the effect region to have exactly one level, and is computed on the viewing GM's client.
 - Foundry splits a long drag into several movement segments; the module treats them as one movement (it dedupes on the root movement id). A token repositioned across a trap by a direct edit or teleport also counts as crossing it.
 - Verified on Foundry 14.370 only. sf2e (1.7) shares the pf2e adapter: its save request, damage card and hazard action were checked live, but the full multi-client pass ([docs/qa-checklist.md](docs/qa-checklist.md)) ran in pf2e only, and sf2e detection was not tested live.
