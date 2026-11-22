@@ -64,7 +64,12 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         anchor: str({ choices: ["fixed", "token"], initial: "fixed" }),
         shape: str({ choices: ["line", "cone", "emanation"], initial: "line" }),
         revealSeconds: new fields.NumberField({ required: true, nullable: false, min: 0, initial: 6 }),
-        blockedByWalls: bool(false)
+        blockedByWalls: bool(false),
+        animation: new fields.SchemaField({
+          preset: nullableStr(),
+          file: nullableStr(),
+          mode: str({ choices: ["stretch", "cone", "area"], initial: "area" })
+        })
       }),
       payload: new fields.SchemaField({
         kind: str({ choices: ["none", "roll", "hazard"], initial: "none" }),

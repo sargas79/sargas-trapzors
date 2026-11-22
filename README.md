@@ -54,6 +54,17 @@ Then enable **Sargas Trapzors** in your world.
 - A trap that was pending when the world was reloaded gets its prompt back on the active GM.
 - Tokens moved by a GM do not trigger traps unless **Tokens moved by a GM trigger it** is ticked.
 
+## Animations (JB2A)
+
+Traps can play a video animation over their effect area when they fire. This is optional and needs no Sequencer: the module has its own small player.
+
+- **Presets** use the [JB2A](https://jb2a.com) library when `jb2a_patreon` or `JB2A_DnD5e` is active (the Patreon version wins). Pick one in the **Animation** menu on the Effect tab: lines (darts, arrows, jets, lightning), cones, areas (explosion, gas, falling rocks, spikes ...) and haunt effects. Presets whose file is missing from your JB2A version (the free one has fewer) are greyed out as "not installed".
+- **Fit:** line animations are stretched along the effect line, cone animations scale to the cone radius, and area animations fill the bounds of the effect area. Token-anchored traps animate at the token.
+- **Custom file:** choose **Custom file...** to use any video or image from your data folder, and pick how it fits (stretch along a line, fit a cone or fill the area).
+- **Preview animation** plays the current selection on your screen only, even before you save. **Fire as test** also plays locally only (GM). A real fire plays on every connected client viewing the scene.
+- Hazard traps made from a haunt get the "Haunting spirits" preset when JB2A is installed and no animation is set yet. Other hazards get a suggestion from their damage traits and effect shape.
+- Animations last up to six seconds and are never saved to the scene. Without JB2A you can still use a custom file.
+
 ## Privacy and limits
 
 **Hiding a trap is a UI matter, not a security boundary.** Foundry sends region and region-behavior data to every connected client, including regions set to GM-only. A player can read trap configuration from the browser console: save DCs, damage formulas, linked hazard actors, detection DCs and which tokens have been checked. Hazard actors the player has no ownership of are also sent to their client. This was verified in spike S1 (see [docs/spikes.md](docs/spikes.md)). **Do not put secrets in trap data.** The module does not encode or obscure it.

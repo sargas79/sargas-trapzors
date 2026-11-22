@@ -161,3 +161,32 @@ test("re-arm timer", async () => {
   assert.deepEqual(splitRearm(90), { value: 90, unit: "seconds" });
   assert.deepEqual(splitRearm(600), { value: 10, unit: "minutes" });
 });
+
+test("animation fields: preset, custom file, mode", () => {
+  const f = base();
+  let r = formToTrapUpdate(f);
+  assert.equal(r.update["system.effect.animation.preset"], null);
+  assert.equal(r.update["system.effect.animation.file"], null); // None clears the file
+  assert.equal(r.update["system.effect.animation.mode"], "area");
+
+  f.effect.animation = { preset: "fireCone", file: "stale.webm", mode: "stretch" };
+  r = formToTrapUpdate(f);
+  assert.equal(r.update["system.effect.animation.preset"], "fireCone");
+  assert.equal(r.update["system.effect.animation.file"], null); // a preset clears the custom file
+  assert.equal(r.update["system.effect.animation.mode"], "stretch");
+
+  f.effect.animation = { preset: "custom", file: "  worlds/x/boom.webm ", mode: "cone" };
+  r = formToTrapUpdate(f);
+  assert.equal(r.update["system.effect.animation.preset"], null);
+  assert.equal(r.update["system.effect.animation.file"], "worlds/x/boom.webm");
+
+  f.effect.animation = { preset: "", file: "kept.webm", mode: "" };
+  r = formToTrapUpdate(f);
+  assert.equal(r.update["system.effect.animation.file"], null); // None clears the file
+  assert.equal(r.update["system.effect.animation.mode"], "area");
+
+  f.effect.animation = { preset: "nope", file: "", mode: "wobble" };
+  r = formToTrapUpdate(f);
+  assert.equal(r.ok, false);
+  assert.deepEqual(errs(r), ["effect.animation.preset:AnimationPreset", "effect.animation.mode:AnimationMode"]);
+});

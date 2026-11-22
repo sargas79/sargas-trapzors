@@ -3,6 +3,9 @@
 import { getAdapter } from "./payload-service.js";
 import { createDetectionArea } from "./detection-service.js";
 import { getLinkStatus } from "./linked-regions.js";
+import { getEffectRegion } from "./effect-area.js";
+import { isAvailable } from "./animations.js";
+import { suggestPreset } from "../core/animation-presets.js";
 
 const FOLDER_NAME = "Sargas Trapzors hazards";
 const L = (k, d) => (d ? game.i18n.format(k, d) : game.i18n.localize(k));
@@ -31,11 +34,25 @@ export async function configureTrapFromHazard(trap, actor) {
     "system.detection.minRank": info.minRank,
     "system.detection.requireSearch": info.minRank > 0, // PF2e: no minimum proficiency means noticeable without Searching
     "system.reusable": info.rearmSeconds != null || info.resetText.trim() !== "",
-    "system.rearmSeconds": info.rearmSeconds
+    "system.rearmSeconds": info.rearmSeconds,
+    ...animationDefault(trap, actor, info)
   });
   if (!info.actionId) ui.notifications.warn(L("SARGAS_TRAPZORS.Hazard.NoAction", { name: actor.name }));
   if (getLinkStatus(trap).detection === "none") await createDetectionArea(trap, { radiusFt: 10 });
   return info;
+}
+
+/**
+ * Update entry that sets a suggested animation preset: only when JB2A is active and the trap has none yet.
+ * With an effect area the preset also follows the damage traits and area shape; without one, the hazard kind only.
+ */
+function animationDefault(trap, actor, info) {
+  const anim = trap.system.effect.animation;
+  if (!isAvailable() || anim?.preset || anim?.file) return {};
+  const hasArea = !!getEffectRegion(trap);
+  const traits = actor.system?.traits?.value ?? [];
+  const preset = suggestPreset({ kind: info.kind, traits, shape: hasArea ? trap.system.effect.shape : null });
+  return preset ? { "system.effect.animation.preset": preset } : {};
 }
 
 /** The world folder that holds imported hazards (created on demand). */

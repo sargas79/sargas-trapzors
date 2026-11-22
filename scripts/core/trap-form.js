@@ -1,5 +1,6 @@
 // Pure form <-> trap system mapping (no Foundry globals). Unit-tested in tests/trap-form.test.js.
 import { DISPOSITIONS } from "./constants.js";
+import { getPreset, ANIMATION_MODES } from "./animation-presets.js";
 
 export const ALLOWED_DISPOSITIONS = Object.freeze([-2, -1, 0, 1]);
 export const ANCHORS = Object.freeze(["fixed", "token"]);
@@ -86,6 +87,17 @@ export function formToTrapUpdate(formData, ctx = {}) {
   if (!SHAPES.includes(shape)) err("effect.shape", "Shape");
   const revealSeconds = parseNumber(effect.revealSeconds);
   if (revealSeconds === null || revealSeconds < 0) err("effect.revealSeconds", "RevealSeconds");
+  // Animation: "custom" is the sheet's marker for a custom file; blank and custom both store no preset.
+  const anim = effect.animation ?? {};
+  const rawPreset = asString(anim.preset).trim();
+  let animPreset = null;
+  if (rawPreset !== "" && rawPreset !== "custom") {
+    if (getPreset(rawPreset)) animPreset = rawPreset;
+    else err("effect.animation.preset", "AnimationPreset");
+  }
+  const animMode = isBlank(anim.mode) ? "area" : asString(anim.mode).trim();
+  if (!ANIMATION_MODES.includes(animMode)) err("effect.animation.mode", "AnimationMode");
+  const animFile = rawPreset === "custom" ? nullableString(anim.file) : null;
 
   // Payload
   const kind = asString(payload.kind);
@@ -149,6 +161,9 @@ export function formToTrapUpdate(formData, ctx = {}) {
     "system.effect.anchor": anchor,
     "system.effect.shape": shape,
     "system.effect.revealSeconds": revealSeconds,
+    "system.effect.animation.preset": animPreset,
+    "system.effect.animation.file": animFile,
+    "system.effect.animation.mode": animMode,
     "system.payload.kind": kind,
     "system.payload.flavor": asString(payload.flavor),
     "system.payload.soundPath": nullableString(payload.soundPath),

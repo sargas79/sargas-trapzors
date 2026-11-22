@@ -86,3 +86,17 @@ test("a v1 object migrates to v2 with the re-arm fields", () => {
   assert.equal(data.status, "spent");
   assert.deepEqual(data.lastFired, { at: 5, tokenUuids: [] });
 });
+
+test("v2 data without effect.animation gets the animation defaults", () => {
+  const old = defaultTrapSystem();
+  delete old.effect.animation;
+  old.effect.shape = "cone";
+  const { data, migrated } = migrateTrapSystem(old);
+  assert.equal(migrated, true);
+  assert.deepEqual(data.effect.animation, { preset: null, file: null, mode: "area" });
+  assert.equal(data.effect.shape, "cone");
+  assert.equal(data.schemaVersion, 2);
+  const kept = defaultTrapSystem();
+  kept.effect.animation.preset = "explosion";
+  assert.equal(migrateTrapSystem(kept).data.effect.animation.preset, "explosion");
+});

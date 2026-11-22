@@ -2,6 +2,7 @@
 // Effect areas are linked GM-only Regions (plan section 8). All writes are GM-only.
 import { MODULE_ID } from "../core/constants.js";
 import { removeLinkedRegion } from "./linked-regions.js";
+import { playAnimation } from "./animations.js";
 import { defaultEffectShape, anchorShapeToToken, rectsOverlap } from "../core/geometry.js";
 
 const VIS = () => CONST.REGION_VISIBILITY ?? { GAMEMASTER: 1, ALWAYS: 2 };
@@ -196,6 +197,8 @@ export async function fireEffect(behavior, anchorToken, { test = false } = {}) {
   const shapes = resolveEffectShapes(behavior, anchorToken);
   const affected = await resolveAffectedTokens(behavior, anchorToken);
   await revealEffect(behavior, shapes, { test });
+  // Fire and forget: playAnimation never throws, and loading a video must not delay the effect.
+  playAnimation(behavior, shapes, { test }).catch((err) => console.error(`${MODULE_ID} | animation failed`, err));
   return { configured: true, affected };
 }
 

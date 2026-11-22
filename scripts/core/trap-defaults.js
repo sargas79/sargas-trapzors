@@ -19,7 +19,10 @@ export function defaultTrapSystem() {
       includeHidden: false,
       gmMovementTriggers: false
     },
-    effect: { regionId: null, anchor: "fixed", shape: "line", revealSeconds: 6 },
+    effect: {
+      regionId: null, anchor: "fixed", shape: "line", revealSeconds: 6,
+      animation: { preset: null, file: null, mode: "area" }
+    },
     payload: {
       kind: "none",
       flavor: "",

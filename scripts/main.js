@@ -11,6 +11,7 @@ import { TrapConfig } from "./apps/trap-config.js";
 import { registerSceneControls, createTrapFromRegion, openTrapManager } from "./apps/scene-controls.js";
 import { createTriggerService } from "./foundry/trigger-service.js";
 import { configureTrapFromHazard, importHazard } from "./foundry/hazard-traps.js";
+import { registerAnimationSocket } from "./foundry/animations.js";
 import { debounce } from "./apps/ui-helpers.js";
 
 const log = createLogger({
@@ -68,6 +69,7 @@ Hooks.once("ready", () => {
   // game.user is unavailable during init, so GM-gated logging must happen here.
   log.info("ready", { version: game.modules.get(MODULE_ID)?.version });
   effectArea.cleanupReveals().catch((err) => log.error("reveal cleanup failed", err));
+  registerAnimationSocket();
   registerLinkedRegionHooks({ log });
   cleanupOrphans({ log }).catch((err) => log.error("orphan cleanup failed", err));
   createDetectionService({ log });

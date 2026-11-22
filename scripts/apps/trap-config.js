@@ -5,7 +5,9 @@ import { formToTrapUpdate, trapToFormContext, splitRearm, REARM_UNITS, ALLOWED_D
 import { rearmRemaining, formatDuration } from "../core/hazard-info.js";
 import { configureTrapFromHazard } from "../foundry/hazard-traps.js";
 import { getAdapter } from "../foundry/payload-service.js";
-import { createEffectArea, setBlockedByWalls, previewEffect, getEffectRegion } from "../foundry/effect-area.js";
+import { createEffectArea, setBlockedByWalls, previewEffect, getEffectRegion, resolveEffectShapes } from "../foundry/effect-area.js";
+import { jb2aRoot, presetAvailable, playAnimation } from "../foundry/animations.js";
+import { ANIMATION_PRESETS, ANIMATION_GROUPS, ANIMATION_MODES, presetsByGroup } from "../core/animation-presets.js";
 import { createDetectionArea, reveal } from "../foundry/detection-service.js";
 import { getLinkStatus, repairLinks } from "../foundry/linked-regions.js";
 import { getTriggerService } from "../foundry/trigger-service.js";
@@ -33,6 +35,8 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     actions: {
       placeEffect: this.#onPlaceEffect,
       previewEffect: this.#onPreview,
+      previewAnimation: this.#onPreviewAnimation,
+      browseAnimation: this.#onBrowseAnimation,
       repairLinks: this.#onRepair,
       resetTrap: this.#onReset,
       createDetection: this.#onCreateDetection,
@@ -231,6 +235,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       detectionStrip: this.#strip("detection", links.detection, b.scene?.regions?.get(b.system.detection.regionId)),
       rearmUnits: toOptions(Object.keys(REARM_UNITS).map((u) => ({ value: u, label: L(`SARGAS_TRAPZORS.Config.RearmUnit.${u}`) })), v.rearm.unit),
       rearmIn: this.#rearmIn(b),
+      animation: await this.#animationContext(v),
       anchorHint: L(`SARGAS_TRAPZORS.Config.Anchor.hint.${v.effect.anchor}`),
       kindHint: L(`SARGAS_TRAPZORS.Config.Kind.hint.${v.payload.kind}`),
       lastFired: b.system.lastFired ? relativeTime(b.system.lastFired.at) : L("SARGAS_TRAPZORS.Config.Never"),
@@ -241,6 +246,40 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       actorTypes,
       soundPath: v.payload.soundPath ?? ""
     });
+  }
+
+  /** Animation select (None, preset groups, Custom), custom-file fields and JB2A availability. */
+  async #animationContext(v) {
+    const anim = v.effect.animation ?? {};
+    const hasJb2a = jb2aRoot() !== null;
+    // null = stored value; "" = the user picked None; "custom" = the user picked Custom file.
+    const selected = anim.preset === "custom" ? "custom" : anim.preset ? anim.preset : (anim.preset === null && anim.file ? "custom" : "");
+    const groups = [];
+    if (hasJb2a) {
+      const ok = new Map(await Promise.all(ANIMATION_PRESETS.map(async (pr) => [pr.id, await presetAvailable(pr)])));
+      for (const g of ANIMATION_GROUPS) {
+        groups.push({
+          label: L(`SARGAS_TRAPZORS.Animation.Group.${g}`),
+          options: presetsByGroup(g).map((pr) => {
+            const missing = !ok.get(pr.id);
+            return {
+              value: pr.id,
+              label: missing ? `${L(pr.labelKey)} ${L("SARGAS_TRAPZORS.Animation.NotInstalled")}` : L(pr.labelKey),
+              selected: pr.id === selected,
+              disabled: missing && pr.id !== selected // a disabled option is not submitted: keep the stored one enabled
+            };
+          })
+        });
+      }
+    }
+    return {
+      options: [{ value: "", label: L("SARGAS_TRAPZORS.Animation.None"), selected: selected === "" }],
+      groups,
+      isCustom: selected === "custom",
+      file: anim.file ?? "",
+      modes: toOptions(ANIMATION_MODES.map((m) => ({ value: m, label: L(`SARGAS_TRAPZORS.Animation.Mode.${m}`) })), anim.mode ?? "area"),
+      hasJb2a
+    };
   }
 
   /** "re-arms in ..." for a spent trap with a timer; null otherwise. */
@@ -330,7 +369,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     this.element.addEventListener("change", (event) => {
       this.#dirty = true;
       const name = event.target?.name;
-      if (["payload.kind", "payload.hazard.actorUuid", "effect.anchor"].includes(name)) this.render();
+      if (["payload.kind", "payload.hazard.actorUuid", "effect.anchor", "effect.animation.preset"].includes(name)) this.render();
     });
     const rerender = debounce(() => { if (this.rendered) this.render(); }, 100);
     const sceneId = this.document.parent?.parent?.id;
@@ -366,6 +405,41 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #onPreview() {
     try { await previewEffect(this.document); } catch (err) { ui.notifications.error(err.message, { console: false }); }
+  }
+
+  /** GM-local preview of the current (possibly unsaved) animation choice on the effect area. */
+  static async #onPreviewAnimation() {
+    const el = this.element;
+    const sel = el.querySelector('[name="effect.animation.preset"]')?.value ?? "";
+    const file = el.querySelector('[name="effect.animation.file"]')?.value.trim() ?? "";
+    const mode = el.querySelector('[name="effect.animation.mode"]')?.value ?? "area";
+    let animation = null;
+    if (sel === "custom" && file) animation = { preset: null, file, mode };
+    else if (sel && sel !== "custom") animation = { preset: sel, file: null, mode };
+    if (!animation) {
+      ui.notifications.warn(L("SARGAS_TRAPZORS.Animation.PreviewNone"));
+      return;
+    }
+    const shapes = resolveEffectShapes(this.document, firstControlledToken()?.document);
+    if (!shapes) {
+      ui.notifications.warn(L("SARGAS_TRAPZORS.Animation.PreviewNoArea"));
+      return;
+    }
+    const played = await playAnimation(this.document, shapes, { test: true, animation });
+    if (!played) ui.notifications.warn(L("SARGAS_TRAPZORS.Animation.PreviewFailed"));
+  }
+
+  static #onBrowseAnimation() {
+    const input = this.element.querySelector('[name="effect.animation.file"]');
+    new foundry.applications.apps.FilePicker.implementation({
+      type: "imagevideo",
+      current: input?.value ?? "",
+      callback: (path) => {
+        if (!input) return;
+        input.value = path;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }).render({ force: true });
   }
 
   static async #onRepair() {
