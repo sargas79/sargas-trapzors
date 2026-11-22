@@ -173,3 +173,73 @@ export function suggestPreset({ kind, traits, shape } = {}) {
   if (t.has("poison") || t.has("acid")) return pick("acidJet", null, "poisonGas");
   return shape === "line" ? "darts" : null;
 }
+
+/* ------------------------------------------------------------ */
+/*  Reveal glow presets                                          */
+/* ------------------------------------------------------------ */
+
+const g = (id, path, size) =>
+  Object.freeze({ id, labelKey: `SARGAS_TRAPZORS.Glow.Preset.${id}`, path, size: Object.freeze(size) });
+
+/** One-shot glows played over the trigger area when a trap is revealed (JB2A Patreon; paths relative to `Library`). */
+export const GLOW_PRESETS = Object.freeze([
+  g("detectBlue", "1st_Level/Detect_Magic/DetectMagicCircle_01_Regular_Blue_1200x1200.webm", { width: 1200, height: 1200 }),
+  g("detectGreen", "1st_Level/Detect_Magic/DetectMagicCircle_01_Regular_Green_1200x1200.webm", { width: 1200, height: 1200 }),
+  g("detectPurple", "1st_Level/Detect_Magic/DetectMagicCircle_01_Regular_Purple_1200x1200.webm", { width: 1200, height: 1200 }),
+  g("detectYellow", "1st_Level/Detect_Magic/DetectMagicCircle_01_Regular_Yellow_1200x1200.webm", { width: 1200, height: 1200 }),
+  g("detectRed", "1st_Level/Detect_Magic/DetectMagicCircle_01_Dark_Red_1200x1200.webm", { width: 1200, height: 1200 }),
+  // The file name carries no WxH; the video is 500x500.
+  g("divinationPulse", "TMFX/Runes/Circle/DivinationOutPulse_01_Circle_Normal_500.webm", { width: 500, height: 500 })
+]);
+
+/** Glow preset by key, or null (also for null/unknown keys). */
+export function getGlow(key) {
+  return GLOW_PRESETS.find((x) => x.id === key) ?? null;
+}
+
+/**
+ * Placement of a glow over a trigger region's bounds: centred, sized so its larger side matches the larger side of
+ * the bounds (uniform scale). Null for an unknown glow or empty bounds.
+ * @param {string} key  glow preset key
+ * @param {{x:number,y:number,width:number,height:number}} bounds  canvas pixels
+ * @returns {{src:string, placement:object}|null}  `src` is relative to the JB2A `Library` folder
+ */
+export function glowPlacement(key, bounds) {
+  const glow = getGlow(key);
+  if (!glow || !bounds) return null;
+  const placement = computePlacement(
+    { type: "rectangle", x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
+    { path: glow.path, mode: "area", size: glow.size }
+  );
+  return placement ? { src: glow.path, placement } : null;
+}
+
+/* ------------------------------------------------------------ */
+/*  Visual Automation helpers                                    */
+/* ------------------------------------------------------------ */
+
+/** A JB2A database path ("jb2a.spike_trap...") rather than a file path: no "/" and no media extension. */
+export function isDatabasePath(src) {
+  const s = String(src ?? "").trim();
+  return s !== "" && !s.includes("/") && !/\.(webm|mp4|m4v|webp|png|gif|apng)$/i.test(s);
+}
+
+/**
+ * Re-express a placement (any anchor) as the centre-anchored form Visual Automation uses for placed effects:
+ * centre point, size in pixels and rotation in degrees. The drawn result is identical.
+ * @param {{x:number,y:number,width:number,height:number,rotation?:number,anchorX?:number,anchorY?:number}} p
+ * @returns {{x:number,y:number,width:number,height:number,rotation:number}}
+ */
+export function centerPlacement(p) {
+  const rotation = p.rotation ?? 0;
+  const dx = (0.5 - (p.anchorX ?? 0.5)) * p.width;
+  const dy = (0.5 - (p.anchorY ?? 0.5)) * p.height;
+  const r = rad(rotation);
+  return {
+    x: p.x + dx * Math.cos(r) - dy * Math.sin(r),
+    y: p.y + dx * Math.sin(r) + dy * Math.cos(r),
+    width: p.width,
+    height: p.height,
+    rotation
+  };
+}

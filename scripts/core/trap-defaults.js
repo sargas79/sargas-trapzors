@@ -22,7 +22,7 @@ export function defaultTrapSystem() {
     },
     effect: {
       regionId: null, anchor: "fixed", shape: "line", revealSeconds: 6,
-      animation: { preset: null, file: null, mode: "area" }
+      animation: { preset: null, file: null, mode: "area", persist: false }
     },
     payload: {
       kind: "none",
@@ -38,6 +38,7 @@ export function defaultTrapSystem() {
       dc: null,
       requireSearch: true,
       minRank: 0,
+      revealGlow: null,
       checked: []
     }
   };

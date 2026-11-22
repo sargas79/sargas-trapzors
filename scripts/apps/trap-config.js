@@ -7,8 +7,8 @@ import { ENCOUNTER_ADD_MODES } from "../core/encounter.js";
 import { configureTrapFromHazard } from "../foundry/hazard-traps.js";
 import { getAdapter } from "../foundry/payload-service.js";
 import { createEffectArea, setBlockedByWalls, previewEffect, getEffectRegion, resolveEffectShapes } from "../foundry/effect-area.js";
-import { jb2aRoot, presetAvailable, playAnimation } from "../foundry/animations.js";
-import { ANIMATION_PRESETS, ANIMATION_GROUPS, ANIMATION_MODES, presetsByGroup } from "../core/animation-presets.js";
+import { jb2aRoot, presetAvailable, playAnimation, playGlow, svaApi, usingSva } from "../foundry/animations.js";
+import { ANIMATION_PRESETS, ANIMATION_GROUPS, ANIMATION_MODES, GLOW_PRESETS, presetsByGroup, isDatabasePath } from "../core/animation-presets.js";
 import { createDetectionArea, reveal } from "../foundry/detection-service.js";
 import { getLinkStatus, repairLinks } from "../foundry/linked-regions.js";
 import { getTriggerService } from "../foundry/trigger-service.js";
@@ -39,6 +39,8 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       previewEffect: this.#onPreview,
       previewAnimation: this.#onPreviewAnimation,
       browseAnimation: this.#onBrowseAnimation,
+      browseSva: this.#onBrowseSva,
+      previewGlow: this.#onPreviewGlow,
       repairLinks: this.#onRepair,
       resetTrap: this.#onReset,
       createDetection: this.#onCreateDetection,
@@ -239,6 +241,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       rearmUnits: toOptions(Object.keys(REARM_UNITS).map((u) => ({ value: u, label: L(`SARGAS_TRAPZORS.Config.RearmUnit.${u}`) })), v.rearm.unit),
       rearmIn: this.#rearmIn(b),
       animation: await this.#animationContext(v),
+      glow: this.#glowContext(v),
       anchorHint: L(`SARGAS_TRAPZORS.Config.Anchor.hint.${v.effect.anchor}`),
       kindHint: L(`SARGAS_TRAPZORS.Config.Kind.hint.${v.payload.kind}`),
       lastFired: b.system.lastFired ? relativeTime(b.system.lastFired.at) : L("SARGAS_TRAPZORS.Config.Never"),
@@ -281,7 +284,24 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       isCustom: selected === "custom",
       file: anim.file ?? "",
       modes: toOptions(ANIMATION_MODES.map((m) => ({ value: m, label: L(`SARGAS_TRAPZORS.Animation.Mode.${m}`) })), anim.mode ?? "area"),
-      hasJb2a
+      hasJb2a,
+      sva: svaApi() !== null,
+      persist: !!anim.persist,
+      // A database path plays only through Visual Automation.
+      needsSva: selected === "custom" && isDatabasePath(anim.file) && !usingSva()
+    };
+  }
+
+  /** Reveal glow select (None + presets) and whether JB2A is there to play it. */
+  #glowContext(v) {
+    const selected = v.detection.revealGlow ?? "";
+    return {
+      options: toOptions(
+        [{ value: "", label: L("SARGAS_TRAPZORS.Glow.None") },
+          ...GLOW_PRESETS.map((g) => ({ value: g.id, label: L(g.labelKey) }))],
+        selected
+      ),
+      hasJb2a: jb2aRoot() !== null
     };
   }
 
@@ -448,8 +468,41 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       ui.notifications.warn(L("SARGAS_TRAPZORS.Animation.PreviewNoArea"));
       return;
     }
-    const played = await playAnimation(this.document, shapes, { test: true, animation });
-    if (!played) ui.notifications.warn(L("SARGAS_TRAPZORS.Animation.PreviewFailed"));
+    const { played, note } = await playAnimation(this.document, shapes, { test: true, animation });
+    if (!played) ui.notifications.warn(note ?? L("SARGAS_TRAPZORS.Animation.PreviewFailed"));
+  }
+
+  /** Pick a JB2A database path in Visual Automation's browser; it becomes the custom animation file. */
+  static #onBrowseSva() {
+    const api = svaApi();
+    if (!api) return;
+    api.ui.openBrowser({
+      onPick: async (path) => {
+        if (!path || !this.rendered) return;
+        const sel = () => this.element.querySelector('[name="effect.animation.preset"]');
+        if (sel() && sel().value !== "custom") {
+          sel().value = "custom";
+          this.#dirty = true;
+          await this.render(); // the draft keeps the other unsaved values and shows the file field
+        }
+        const input = this.element.querySelector('[name="effect.animation.file"]');
+        if (!input) return;
+        input.value = path;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+  }
+
+  /** GM-only preview of the glow chosen in the (possibly unsaved) form. */
+  static async #onPreviewGlow() {
+    const key = this.element.querySelector('[name="detection.revealGlow"]')?.value ?? "";
+    if (!key) {
+      ui.notifications.warn(L("SARGAS_TRAPZORS.Glow.PreviewNone"));
+      return;
+    }
+    const ok = await playGlow(this.document, { glow: key, preview: true });
+    if (!ok) ui.notifications.warn(L("SARGAS_TRAPZORS.Glow.PreviewFailed"));
   }
 
   static #onBrowseAnimation() {

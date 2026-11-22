@@ -67,14 +67,29 @@ You can fire a trap, or run its detection check, at chosen characters without mo
 
 ## Animations (JB2A)
 
-Traps can play a video animation over their effect area when they fire. This is optional and needs no Sequencer: the module has its own small player.
+Traps can play a video animation over their effect area when they fire. This is optional and needs no Sequencer: the module has its own small player, and it can use [Sargas Visual Automation](https://github.com/sargas79/sargas-visual-automation) instead (see below).
+
+**Tested with JB2A Patreon (`jb2a_patreon`).** The free JB2A (`JB2A_DnD5e`) is supported but untested: presets whose file it lacks are greyed out.
 
 - **Presets** use the [JB2A](https://jb2a.com) library when `jb2a_patreon` or `JB2A_DnD5e` is active (the Patreon version wins). Pick one in the **Animation** menu on the Effect tab: lines (darts, arrows, jets, lightning), cones, areas (explosion, gas, falling rocks, spikes ...) and haunt effects. Presets whose file is missing from your JB2A version (the free one has fewer) are greyed out as "not installed".
 - **Fit:** line animations are stretched along the effect line, cone animations scale to the cone radius, and area animations fill the bounds of the effect area. Token-anchored traps animate at the token.
 - **Custom file:** choose **Custom file...** to use any video or image from your data folder, and pick how it fits (stretch along a line, fit a cone or fill the area).
 - **Preview animation** plays the current selection on your screen only, even before you save. **Fire as test** also plays locally only (GM). A real fire plays on every connected client viewing the scene.
 - Hazard traps made from a haunt get the "Haunting spirits" preset when JB2A is installed and no animation is set yet. Other hazards get a suggestion from their damage traits and effect shape.
-- Animations last up to six seconds and are never saved to the scene. Without JB2A you can still use a custom file.
+- The built-in player's animations last up to six seconds and are never saved to the scene. Without JB2A you can still use a custom file.
+
+### Sargas Visual Automation
+
+When Sargas Visual Automation (0.6.3 tested for the API) is active, trap animations and reveal glows play through it, with the same placement as the built-in player. Set **Animation player** in the module settings to **Built-in player** to keep using the built-in one. Without Visual Automation nothing changes.
+
+- A real fire plays for everyone through Visual Automation (it syncs the animation itself). **Fire as test** and **Preview animation** play for GMs only.
+- **Browse Visual Automation...** (Effect tab, only when it is active) opens its animation picker and stores a JB2A database path such as `jb2a.spike_trap...` as the trap's custom animation. A database path needs Visual Automation to play: with it inactive, or the setting on Built-in, the animation is skipped with a GM warning and the sheet says so.
+- **Stay until reset** (Visual Automation only) keeps the animation on the map as a persistent effect named `sargas-trapzors:<trap id>`, for example deployed spikes. It ends when the trap is reset, re-arms, is disabled or is deleted, and survives scene reloads.
+- **Double animations:** Visual Automation's pf2e automation may also animate a hazard strike that a trap rolls. When a trap with its own animation fires a hazard strike, the module switches Visual Automation's animation off for that hazard actor (`SVA.automation.setActorDisabled`), but only for hazards the module imported into the "Sargas Trapzors hazards" world folder. Re-enable it from Visual Automation's actor overview if you want that actor animated by Visual Automation again, or change `SUPPRESS_SVA_HAZARD_ANIMATION` in `scripts/foundry/animations.js`. Whether Visual Automation really animates these rolls has to be confirmed in a live game.
+
+### Glow when revealed
+
+On the Detection tab, **Glow when revealed** plays a JB2A Patreon effect once over the trigger area, for everyone, when the trap is revealed (the **Reveal** chat button or **Reveal now**; not when it was already revealed). Choose a Detect Magic circle (blue, green, purple, yellow, dark red) or a divination rune pulse. **None** is the default and changes nothing. **Preview glow** plays it for you only. It plays through Visual Automation when that is in use.
 
 ## Privacy and limits
 
@@ -85,7 +100,7 @@ Traps can play a video animation over their effect area when they fire. This is 
 - **Detection works only in pf2e and sf2e.** In other systems it is unavailable.
 - **Hazard strikes need the GM on the trap's scene for map targets.** A strike against a token is rolled on the active GM's client, which must be viewing that token's scene. Characters with no token (Fire at…) are rolled without a target, so the public attack card shows no degree; only the GM's whispered line does. Routine-card strikes against tokens on other scenes are rolled the same way.
 - **Theater of the mind** (Fire at… and Detection check…) needs the active GM. Not yet tested live: sf2e, and firing a trap that is stored on another scene when it has an effect area or an encounter (the map effect area is skipped; an encounter only adds tokens on the trap's scene).
-- **Blocked by walls** needs the effect region to have exactly one level, and is computed on the viewing GM's client.
+- **Blocked by walls** is computed on the viewing GM's client, on the scene the GM is viewing. On a scene with several levels the walls of one level clip the area: the triggering token's level (token origin), else the trigger region's level that holds the token, else its lowest level, else the scene's first. Only tokens on that level are affected. If the trap's scene is not the viewed one, the area is used unclipped (still only that level) and the GM summary says so. In pf2e, line, cone and circle areas never hit tokens through a wall anyway: the system checks walls itself for those shapes, even with **Blocked by walls** off. The red area shown on the map during a fire is clipped by Foundry only when its level is the one the GM views. See S7 in [docs/spikes.md](docs/spikes.md).
 - Foundry splits a long drag into several movement segments; the module treats them as one movement (it dedupes on the root movement id). A token repositioned across a trap by a direct edit or teleport also counts as crossing it.
 - Verified on Foundry 14.370 only. sf2e (1.7) shares the pf2e adapter: its save request, damage card and hazard action were checked live, but the full multi-client pass ([docs/qa-checklist.md](docs/qa-checklist.md)) ran in pf2e only, and sf2e detection was not tested live.
 - With **Tokens moved by a GM trigger it** on, a GM-dragged token was once not stopped at the edge right after the setting was toggled (the prompt still appeared). It stopped correctly in every later run.

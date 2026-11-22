@@ -94,7 +94,7 @@ test("v2 data without effect.animation gets the animation defaults", () => {
   old.effect.shape = "cone";
   const { data, migrated } = migrateTrapSystem(old);
   assert.equal(migrated, true);
-  assert.deepEqual(data.effect.animation, { preset: null, file: null, mode: "area" });
+  assert.deepEqual(data.effect.animation, { preset: null, file: null, mode: "area", persist: false });
   assert.equal(data.effect.shape, "cone");
   assert.equal(data.schemaVersion, 3);
   const kept = defaultTrapSystem();

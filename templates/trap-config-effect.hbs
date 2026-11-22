@@ -57,6 +57,11 @@
       <button type="button" data-action="previewAnimation">
         <i class="fa-solid fa-film" inert></i> {{localize "SARGAS_TRAPZORS.Animation.Preview"}}
       </button>
+      {{#if animation.sva}}
+      <button type="button" data-action="browseSva" {{#unless editable}}disabled{{/unless}}>
+        <i class="fa-solid fa-magnifying-glass" inert></i> {{localize "SARGAS_TRAPZORS.Animation.BrowseSva"}}
+      </button>
+      {{/if}}
     </div>
     <p class="hint">{{localize "SARGAS_TRAPZORS.Animation.Hint"}}{{#unless animation.hasJb2a}} <span class="st-muted">{{localize "SARGAS_TRAPZORS.Animation.NoJb2a"}}</span>{{/unless}}</p>
   </div>
@@ -68,6 +73,9 @@
       <button type="button" class="icon fa-solid fa-file-video" data-action="browseAnimation" data-tooltip="SARGAS_TRAPZORS.Animation.Browse" aria-label="{{localize "SARGAS_TRAPZORS.Animation.Browse"}}"></button>
     </div>
   </div>
+  {{#if animation.needsSva}}
+  <p class="notification warning st-notice">{{localize "SARGAS_TRAPZORS.Animation.DbPathHint"}}</p>
+  {{/if}}
   <div class="form-group">
     <label for="st-anim-mode">{{localize "SARGAS_TRAPZORS.Animation.Mode.label"}}</label>
     <div class="form-fields">
@@ -75,6 +83,15 @@
         {{#each animation.modes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
       </select>
     </div>
+  </div>
+  {{/if}}
+  {{#if animation.sva}}
+  <div class="form-group">
+    <label for="st-anim-persist">{{localize "SARGAS_TRAPZORS.Animation.Persist"}}</label>
+    <div class="form-fields">
+      <input id="st-anim-persist" type="checkbox" name="effect.animation.persist" {{#if animation.persist}}checked{{/if}}>
+    </div>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Animation.PersistHint"}}</p>
   </div>
   {{/if}}
   <div class="form-group">

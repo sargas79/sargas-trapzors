@@ -8,6 +8,7 @@ import { STATUS } from "../core/constants.js";
 import { ConfirmPrompt } from "../apps/confirm-prompt.js";
 import { isAuthority } from "./authority.js";
 import { fireEffect } from "./effect-area.js";
+import { endTrapAnimation, syncHazardAnimationSuppression } from "./animations.js";
 import { runPayload, validateFirePayload } from "./payload-service.js";
 import { postGMSummary, postDetectionNote } from "./chat.js";
 import { startEncounter, previewEncounter, clearEncounter } from "./hazard-encounter.js";
@@ -137,8 +138,13 @@ class TriggerService {
       affected = [...triggering];
     } else {
       try {
+        // A real fire: keep Visual Automation from also animating the hazard's strike (see animations.js).
+        if (!test && behavior.system.payload.kind === "hazard" && behavior.system.payload.hazard.actorUuid) {
+          await syncHazardAnimationSuppression(behavior, await fromUuid(behavior.system.payload.hazard.actorUuid));
+        }
         const res = await fireEffect(behavior, triggering[0] ?? null, { test });
         if (!res.configured) notes.push(L("SARGAS_TRAPZORS.Chat.NoEffectArea"));
+        notes.push(...res.notes);
         affected = res.affected;
       } catch (err) {
         this.log.error("effect resolution failed", err);
@@ -328,6 +334,7 @@ class TriggerService {
         "system.pending": r.state.pending,
         "system.detection.checked": r.state.detection.checked
       });
+      await endTrapAnimation(current); // a "stay until reset" animation ends here (also on re-arm)
       await this.prompts.get(behavior.uuid)?.close();
     } catch (err) {
       this.log.error("reset failed", err);
@@ -347,7 +354,10 @@ class TriggerService {
         update["system.pending"] = r.state.pending;
       }
       await current.update(update);
-      if (!on) await this.prompts.get(behavior.uuid)?.close();
+      if (!on) {
+        await endTrapAnimation(current);
+        await this.prompts.get(behavior.uuid)?.close();
+      }
     } catch (err) {
       this.log.error("setEnabled failed", err);
     }

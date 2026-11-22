@@ -73,7 +73,8 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         animation: new fields.SchemaField({
           preset: nullableStr(),
           file: nullableStr(),
-          mode: str({ choices: ["stretch", "cone", "area"], initial: "area" })
+          mode: str({ choices: ["stretch", "cone", "area"], initial: "area" }),
+          persist: bool(false)
         })
       }),
       payload: new fields.SchemaField({
@@ -106,6 +107,7 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         dc: new fields.NumberField({ required: true, nullable: true, integer: true, initial: null }),
         requireSearch: bool(true),
         minRank: new fields.NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 0 }),
+        revealGlow: nullableStr(),
         checked: new fields.ArrayField(str(), { required: true, initial: () => [] })
       })
     };
