@@ -1,10 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-11-22
 
-### Hazard strikes
+### Added
 
-- A hazard payload can now link a hazard strike (melee or ranged) as well as an action. The strike is rolled against the AC of each affected token (or the triggering tokens, chosen on the Payload tab), up to 10 targets, with the roll dialog skipped. The system's attack cards carry the Damage and Critical buttons (shown to the GM); damage is never applied automatically. Fire as test whispers a one-line result per target to GMs, with no placeholder for players.
+- **Hazard strikes** (pf2e/sf2e): a hazard payload can now link a hazard strike (melee or ranged) as well as an action. The strike is rolled against the AC of each affected token (or the triggering tokens, chosen on the Payload tab), up to 10 targets, with the roll dialog skipped. The system's attack cards carry the Damage and Critical buttons (shown to the GM); damage is never applied automatically. Fire as test whispers a one-line result per target to GMs, with no placeholder for players.
+
+### Known limitations
+
+- A hazard strike rolls only while the active GM is viewing the trap's scene; otherwise each target is skipped with a notice.
+- Not yet tested live: ranged hazard strikes, more than 10 targets, and sf2e.
 
 ## 0.2.0 — 2026-11-22
 
