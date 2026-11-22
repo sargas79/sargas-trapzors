@@ -122,7 +122,7 @@ class TriggerService {
   /* ------------------------------------------------------------ */
 
   /** Effect area, payload and GM summary. Never throws: failures become summary notes. */
-  async #resolveFire(behavior, entries, test) {
+  async #resolveFire(behavior, entries, test, { fixedTargets = null } = {}) {
     const L = (k) => game.i18n.localize(k);
     const notes = [];
     const trapName = behavior.region?.name || behavior.name;
@@ -132,13 +132,18 @@ class TriggerService {
       if (doc) triggering.push(doc);
     }
     let affected = [];
-    try {
-      const res = await fireEffect(behavior, triggering[0] ?? null, { test });
-      if (!res.configured) notes.push(L("SARGAS_TRAPZORS.Chat.NoEffectArea"));
-      affected = res.affected;
-    } catch (err) {
-      this.log.error("effect resolution failed", err);
-      notes.push(L("SARGAS_TRAPZORS.Chat.EffectFailed"));
+    if (fixedTargets) {
+      // "Fire at...": the chosen targets are the affected creatures; the map effect area is skipped.
+      affected = [...triggering];
+    } else {
+      try {
+        const res = await fireEffect(behavior, triggering[0] ?? null, { test });
+        if (!res.configured) notes.push(L("SARGAS_TRAPZORS.Chat.NoEffectArea"));
+        affected = res.affected;
+      } catch (err) {
+        this.log.error("effect resolution failed", err);
+        notes.push(L("SARGAS_TRAPZORS.Chat.EffectFailed"));
+      }
     }
     let dc = null;
     try {
@@ -254,15 +259,35 @@ class TriggerService {
    * @param {{token?:TokenDocument|null, test?:boolean}} [opts]
    */
   async manualFire(behavior, { token = null, test = false } = {}) {
+    const entries = token ? [TriggerService.#entry(token)] : [];
+    return this.#fireManually(behavior, entries, test, false);
+  }
+
+  /**
+   * Theater of the mind: fire a trap at chosen targets, skipping the map effect area. Same authority check,
+   * validation and state change as {@link manualFire}; a test fire changes nothing.
+   * @param {RegionBehavior} behavior
+   * @param {{targets:(TokenDocument|Actor)[], test?:boolean}} opts
+   */
+  async fireAt(behavior, { targets = [], test = false } = {}) {
+    const unique = [...new Map(targets.filter(Boolean).map((t) => [t.uuid, t])).values()];
+    return this.#fireManually(behavior, unique.map((t) => TriggerService.#entry(t)), test, true);
+  }
+
+  /** A synthetic trigger entry for a token or an actor (the uuid goes in `tokenUuid`). */
+  static #entry(doc) {
+    return { tokenUuid: doc.uuid, movementId: null, userId: game.user.id, at: Date.now() };
+  }
+
+  async #fireManually(behavior, entries, test, fixedTargets) {
     if (!this.#requireAuthority()) return;
     try {
       const uuid = behavior.uuid;
       const current = await fromUuid(uuid);
       if (!current) return;
-      const entries = token ? [{ tokenUuid: token.uuid, movementId: null, userId: game.user.id, at: Date.now() }] : [];
       if (await this.#blockedByValidation(current, entries, test)) return;
       if (test) {
-        await this.#resolveFire(current, entries, true);
+        await this.#resolveFire(current, entries, true, { fixedTargets });
         return;
       }
       const state = TriggerService.#stateOf(current);
@@ -284,7 +309,7 @@ class TriggerService {
         "system.pending": r.state.pending,
         "system.lastFired": r.state.lastFired
       });
-      await this.#resolveFire(fresh, entries, false);
+      await this.#resolveFire(fresh, entries, false, { fixedTargets });
     } catch (err) {
       this.log.error("manual fire failed", err);
     }

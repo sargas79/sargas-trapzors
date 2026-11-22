@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Theater of the mind**: **Fire at…** (Trap Manager row menu and trap sheet) fires a trap at party members, player characters or targeted/selected tokens without moving tokens; the map effect area is skipped, the GM summary lists the targets and the trap's state changes as for any manual fire. **Fire as test (GM only)** changes nothing. Hazard strikes at a character with no token are rolled with no target and the GM gets a whispered hit or miss line against the actor's AC (degree computed with the pf2e rules).
+- **Detection check…** rolls chosen characters' Perception against the trap's Stealth DC with the usual rules (Search, minimum rank, one check per target) and posts the usual GM result with Reveal.
+- Trap Manager **This scene** / **All scenes** switch, so traps on a "library" scene can be fired from any scene.
 - **Complex hazards** (pf2e/sf2e): a trap made from a complex hazard now starts an encounter when it fires, if the new **Encounter** setting on the Payload tab is on (the default). The hazard's reaction or strike runs first, then a hidden hazard token is placed in the trigger area, added with the triggering (default) or affected creatures to the scene's encounter (one is created, not started, if needed) and its Stealth initiative is rolled. The trap cannot trigger again until the hazard ends.
 - **Routine card**: on the hazard's turn the active GM gets a whispered card with the routine text (checks and rolls are clickable), the action count, **Strike** and **Post** buttons for the hazard's strikes and actions, **Disable checks** and **End hazard**. Players never see it. Strikes roll against your targeted tokens, else the effect area, else the trigger area.
 - **End hazard** removes the hazard from the encounter and deletes its token; a re-arm timer then restarts. Also available in the Trap Manager, which shows an **In encounter** badge. Deleting the encounter or resetting the trap removes the token too.

@@ -1,0 +1,28 @@
+<div class="st-fireat">
+  <p class="st-muted">{{#if fire}}{{localize "SARGAS_TRAPZORS.FireAt.HintFire"}}{{else}}{{localize "SARGAS_TRAPZORS.FireAt.HintDetect"}}{{/if}}</p>
+  {{#if hasTargets}}
+  <ul class="st-targets">
+    {{#each targets}}
+    <li>
+      <label>
+        <input type="checkbox" name="target" value="{{uuid}}" {{#if checked}}checked{{/if}}>
+        <span class="st-target-name">{{name}}</span>
+        <span class="st-pill st-trait">{{kindLabel}}</span>
+      </label>
+    </li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="st-empty st-muted">{{localize "SARGAS_TRAPZORS.FireAt.NoTargets"}}</p>
+  {{/if}}
+  {{#if fire}}
+  <label class="st-test-row">
+    <input type="checkbox" name="test">
+    <span>{{localize "SARGAS_TRAPZORS.FireAt.Test"}}</span>
+  </label>
+  {{/if}}
+  <footer class="st-footer">
+    <button type="button" data-action="cancel"><i class="fa-solid fa-xmark" inert></i> {{localize "SARGAS_TRAPZORS.FireAt.Cancel"}}</button>
+    <button type="button" class="st-primary" data-action="confirm"><i class="fa-solid {{confirmIcon}}" inert></i> {{confirmLabel}}</button>
+  </footer>
+</div>

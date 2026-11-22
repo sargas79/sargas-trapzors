@@ -5,6 +5,7 @@ import { checkRequirements, isSuccess } from "../core/detection.js";
 import { buildSaveLine, buildRollFlavor, decideDelivery } from "../core/payload-text.js";
 import { parseMinRank, hazardKind, pickTriggerAction, parseRearmSeconds } from "../core/hazard-info.js";
 import { buildHazardEntry } from "../core/hazard-browser.js";
+import { degreeOfSuccess } from "../core/targets.js";
 
 const INDEX_FIELDS = [
   "type", "system.traits.value", "system.details.level.value", "system.details.isComplex", "system.attributes.stealth"
@@ -110,18 +111,24 @@ export class Pf2eAdapter extends TrapAdapter {
       affected: ids(affected), triggering: ids(triggering), mode: payload.hazard?.strikeTargets ?? "affected"
     });
     const byId = new Map([...(affected ?? []), ...(triggering ?? [])].map((d) => [d.id, d]));
+    // Targets may be TokenDocuments or Actors (theater of the mind); rollStrike handles both.
     return this.rollStrike({ actor, item, targets: targetIds.map((id) => byId.get(id) ?? id), capped, test });
   }
 
   /**
-   * Roll a hazard strike's first variant (no MAP) against each target token; the system posts its own attack
+   * Roll a hazard strike's first variant (no MAP) against each target; the system posts its own attack
    * card with Damage / Critical buttons. Damage is never applied automatically. Shared by the payload and the
-   * routine card. `targets` are TokenDocuments (or ids, which are reported as missing); at most 10 are rolled.
+   * routine card. `targets` are TokenDocuments, Actors (theater of the mind) or ids (reported as missing); at most
+   * 10 are rolled.
    * Options (pf2e 14.370 StrikeData variants[0].roll, pf2e.mjs ~20418): `target` (Token object), `event`.
    * The dialog is skipped through a synthetic event (eventToRollParams, pf2e.mjs ~13752: shiftKey flips the
    * showCheckDialogs default). Test mode rolls with `createMessage: false` and whispers a summary to GMs.
-   * pf2e needs a placed Token object as the target, so only tokens on the firing GM's viewed scene are rolled.
-   * @param {{actor:Actor, item:Item, targets:(TokenDocument|string)[], test?:boolean, capped?:boolean}} p
+   * pf2e needs a placed Token object as the target, so only tokens on the firing GM's viewed scene are rolled
+   * against. An Actor, or a token that is not on the viewed scene, is rolled with no target (public card with
+   * no degree) and the module works out the degree against the actor's AC and whispers it to GMs; in test mode
+   * the roll posts no message at all. Without a `target` pf2e falls back to the user's first targeted token
+   * (pf2e.mjs ~20421), so the GM's targets are cleared for those rolls and restored afterwards.
+   * @param {{actor:Actor, item:Item, targets:(TokenDocument|Actor|string)[], test?:boolean, capped?:boolean}} p
    * @returns {Promise<{notes:string[]}>}
    */
   async rollStrike({ actor, item, targets, test = false, capped = false }) {
@@ -129,34 +136,44 @@ export class Pf2eAdapter extends TrapAdapter {
     const strike = actor.system?.actions?.find((a) => a.type === "strike" && a.item?.id === item.id);
     const variant = strike?.variants?.[0];
     if (!variant?.roll) return { notes: [L("SARGAS_TRAPZORS.Pf2e.StrikeMissing")] };
-    const unique = [...new Map((targets ?? []).map((t) => [typeof t === "string" ? t : t?.id, t])).values()];
+    const unique = [...new Map((targets ?? []).map((t) => [typeof t === "string" ? t : t?.uuid ?? t?.id, t])).values()];
     if (!unique.length) return { notes: [L("SARGAS_TRAPZORS.Pf2e.StrikeNoTargets")] };
     const max = 10;
     const list = unique.slice(0, max);
     capped ||= unique.length > max;
     // shiftKey flips pf2e's showCheckDialogs default, so the roll dialog is always skipped.
     const event = { shiftKey: !!game.user.settings?.showCheckDialogs, ctrlKey: false, metaKey: false };
-    const testLines = [];
+    const gmLines = [];
     let rolled = 0;
     for (const doc of list) {
-      const token = typeof doc === "string" ? null : doc?.object;
-      if (!token || doc.parent?.id !== canvas.scene?.id) {
-        notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeOffScene", { name: esc(typeof doc === "string" ? doc : doc?.name ?? "?") }));
+      if (typeof doc === "string") {
+        notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeOffScene", { name: esc(doc) }));
+        continue;
+      }
+      const isActor = doc.documentName === "Actor";
+      const token = isActor ? null : doc.object;
+      const onScene = !!token && doc.parent?.id === canvas.scene?.id;
+      const targetActor = isActor ? doc : doc.actor;
+      if (!onScene && !targetActor) {
+        notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeOffScene", { name: esc(doc.name ?? "?") }));
         continue;
       }
       try {
-        if (!test) {
-          await variant.roll({ target: token, event });
+        if (onScene) {
+          if (!test) {
+            await variant.roll({ target: token, event });
+          } else {
+            // Test mode: roll without a chat message (a GM-only pf2e roll would show players a
+            // "privately rolled" placeholder) and whisper a plain summary line to GMs instead.
+            const roll = await variant.roll({ target: token, event, createMessage: false });
+            gmLines.push(this.#strikeLine(item, doc.name, roll?.total, this.#armorClass(targetActor), roll?.degreeOfSuccess));
+          }
         } else {
-          // Test mode: roll without a chat message (a GM-only pf2e roll would show players a
-          // "privately rolled" placeholder) and whisper a plain summary line to GMs instead.
-          const roll = await variant.roll({ target: token, event, createMessage: false });
-          const ac = token.actor?.armorClass?.value ?? token.actor?.system?.attributes?.ac?.value ?? "?";
-          const dos = roll?.degreeOfSuccess;
-          testLines.push(L("SARGAS_TRAPZORS.Pf2e.StrikeTestLine", {
-            strike: esc(item.name), target: esc(doc.name), total: roll?.total ?? "?", ac,
-            result: L(DEGREE_KEYS[dos] ?? "SARGAS_TRAPZORS.Pf2e.DegreeUnknown")
-          }));
+          const roll = await this.#rollWithoutTarget(variant, { event, createMessage: test ? false : undefined });
+          const ac = this.#armorClass(targetActor);
+          const die = roll?.dice?.find((d) => d.faces === 20)?.total ?? null;
+          const dos = degreeOfSuccess({ total: roll?.total, dc: ac, die });
+          gmLines.push(this.#strikeLine(item, doc.name, roll?.total, ac, dos));
         }
         rolled++;
       } catch (err) {
@@ -164,17 +181,40 @@ export class Pf2eAdapter extends TrapAdapter {
         notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeFailed", { name: esc(doc.name) }));
       }
     }
-    if (testLines.length) {
-      const prefix = esc(decideDelivery({ test }).prefix.trim());
+    if (gmLines.length) {
+      const prefix = test ? `<p><strong>${esc(decideDelivery({ test }).prefix.trim())}</strong></p>` : "";
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),
         whisper: gmIds(),
-        content: `<p><strong>${prefix}</strong></p><ul>${testLines.map((l) => `<li>${l}</li>`).join("")}</ul>`
+        content: `${prefix}<ul>${gmLines.map((l) => `<li>${l}</li>`).join("")}</ul>`
       });
     }
     notes.unshift(L("SARGAS_TRAPZORS.Pf2e.StrikeRolled", { count: rolled }));
     if (capped) notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeCapped", { max }));
     return { notes };
+  }
+
+  #armorClass(actor) {
+    const ac = actor?.armorClass?.value ?? actor?.system?.attributes?.ac?.value;
+    return typeof ac === "number" ? ac : null;
+  }
+
+  #strikeLine(item, targetName, total, ac, degree) {
+    return L("SARGAS_TRAPZORS.Pf2e.StrikeTestLine", {
+      strike: esc(item.name), target: esc(targetName), total: total ?? "?", ac: ac ?? "?",
+      result: L(DEGREE_KEYS[degree] ?? "SARGAS_TRAPZORS.Pf2e.DegreeUnknown")
+    });
+  }
+
+  /** Roll a strike variant with no target: the GM's targeted tokens are released for the roll, then restored. */
+  async #rollWithoutTarget(variant, { event, createMessage }) {
+    const targeted = [...(game.user.targets ?? [])].map((t) => t.id);
+    if (targeted.length) canvas.tokens?.setTargets([]);
+    try {
+      return await variant.roll({ event, ...(createMessage === false ? { createMessage: false } : {}) });
+    } finally {
+      if (targeted.length) canvas.tokens?.setTargets(targeted);
+    }
   }
 
   /**

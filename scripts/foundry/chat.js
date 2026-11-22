@@ -27,8 +27,10 @@ export async function postGMSummary({ trapName, triggering, affected, dc, notes,
   if (!d.blocked) parts.push(`<p>${esc(L("SARGAS_TRAPZORS.Chat.Affected", { tokens: d.affectedNames.join(", ") || none }))}</p>`);
   if (d.dc != null) parts.push(`<p>${esc(L("SARGAS_TRAPZORS.Chat.DC", { dc: d.dc }))}</p>`);
   for (const n of d.notes) parts.push(`<p><em>${esc(n)}</em></p>`);
-  if (d.affectedUuids.length) {
-    parts.push(`<button type="button" data-action="sargas-trapzors-select" data-token-uuids="${esc(d.affectedUuids.join(","))}">`
+  // Actor-only targets (Fire at...) have no token to select.
+  const selectable = d.affectedUuids.filter((u) => /(^|\.)Token\./.test(u));
+  if (selectable.length) {
+    parts.push(`<button type="button" data-action="sargas-trapzors-select" data-token-uuids="${esc(selectable.join(","))}">`
       + `<i class="fa-solid fa-crosshairs"></i> ${esc(L("SARGAS_TRAPZORS.Chat.SelectAffected"))}</button>`);
   }
   return ChatMessage.create({ content: parts.join(""), whisper: gmIds(), speaker: ChatMessage.getSpeaker({ alias: trapName }) });

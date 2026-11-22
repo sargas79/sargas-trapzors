@@ -177,3 +177,20 @@
 .trap-manager .st-trait { background: transparent; color: var(--st-muted); border: 1px solid var(--st-border); font-weight: 400; }
 .trap-manager .st-more { text-align: center; padding: 6px 0 12px; }
 .trap-config .st-hazard-summary { margin: 0 0 6px; }
+
+/* Fire at... / Detection check... dialog */
+.fire-at .st-fireat { display: flex; flex-direction: column; gap: 8px; }
+.fire-at .st-targets { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 360px; overflow-y: auto; }
+.fire-at .st-targets label {
+  display: flex; align-items: center; gap: 8px; padding: 4px 8px; min-height: var(--st-control-h);
+  background: var(--st-bg-card); border: 1px solid var(--st-border); border-radius: 6px; cursor: pointer;
+}
+.fire-at .st-target-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.fire-at .st-test-row { display: flex; align-items: center; gap: 8px; }
+.fire-at .st-footer { display: flex; justify-content: flex-end; gap: 8px; }
+.fire-at .st-empty { text-align: center; padding: 16px 0; }
+.trap-manager .st-scope { display: inline-flex; border: 1px solid var(--st-border); border-radius: 6px; overflow: hidden; }
+.trap-manager .st-scope button { border: none; border-radius: 0; background: var(--st-bg-card); min-height: var(--st-control-h); }
+.trap-manager .st-scope button.st-on { background: var(--st-accent); color: var(--st-accent-text); font-weight: 700; }
+.trap-manager .st-scene-tag { font-size: 12px; }
+.trap-manager .st-menu button:disabled { opacity: 0.45; cursor: not-allowed; }

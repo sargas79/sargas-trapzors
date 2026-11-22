@@ -3,6 +3,7 @@
 import { MODULE_ID } from "../core/constants.js";
 import { createDeduper } from "../core/dedupe.js";
 import { resolveDetectionDC } from "../core/detection.js";
+import { detectionKey } from "../core/targets.js";
 import { buildDetectionShape, unitsToPixels } from "../core/geometry.js";
 import { removeLinkedRegion } from "./linked-regions.js";
 import { getAdapter } from "./payload-service.js";
@@ -33,16 +34,40 @@ class DetectionService {
   async check(trap, token, key) {
     if (!this.deduper.checkAndAdd(key)) return;
     try {
-      await this.#check(trap, token);
+      await this.#check(trap, { name: token.name, actor: token.actor, key: detectionKey({ tokenUuid: token.uuid }) });
     } catch (err) {
       this.log.error("detection check failed", err);
     }
   }
 
-  async #check(trap, token) {
+  /**
+   * Theater of the mind: one check per chosen target (TokenDocument or Actor), the same rules as a token
+   * entering the detection area. The stored key is the token uuid for a token, else the actor uuid.
+   * @param {RegionBehavior} trap
+   * @param {(TokenDocument|Actor)[]} targets
+   */
+  async checkActors(trap, targets) {
+    if (!game.user.isActiveGM) {
+      ui.notifications.warn(L("SARGAS_TRAPZORS.Notify.NeedActiveGM"));
+      return;
+    }
+    for (const t of targets ?? []) {
+      if (!t) continue;
+      const isToken = t.documentName === "Token";
+      const actor = isToken ? t.actor : t;
+      const key = detectionKey({ tokenUuid: isToken ? t.uuid : null, actorUuid: actor?.uuid });
+      try {
+        await this.#check(trap, { name: t.name, actor, key, reportDuplicate: true });
+      } catch (err) {
+        this.log.error("detection check failed", err);
+      }
+    }
+  }
+
+  /** @param {{name:string, actor:Actor|null, key:string|null, reportDuplicate?:boolean}} target */
+  async #check(trap, { name: tokenName, actor, key, reportDuplicate = false }) {
     const adapter = getAdapter();
     const trapName = trap.region?.name || trap.name;
-    const tokenName = token.name;
     const note = (reason) => postDetectionNote(L("SARGAS_TRAPZORS.Detection.Skipped", {
       token: tokenName, trap: trapName, reason: L(SKIP_KEYS[reason] ?? SKIP_KEYS["no-dc"])
     }));
@@ -63,18 +88,22 @@ class DetectionService {
     }
     const dc = resolveDetectionDC({ dcSource: det.dcSource, manualDC: det.dc, hazardDC });
     if (dc == null) { await note("no-dc"); return; }
+    if (!key) { await note("no-perception"); return; }
 
     // Mark checked first (persisted), then roll.
-    const checked = [...det.checked];
-    if (checked.includes(token.uuid)) return;
-    await trap.update({ "system.detection.checked": [...checked, token.uuid] });
+    const checked = [...trap.system.detection.checked];
+    if (checked.includes(key)) {
+      if (reportDuplicate) await postDetectionNote(L("SARGAS_TRAPZORS.Detection.AlreadyChecked", { token: tokenName, trap: trapName }));
+      return;
+    }
+    await trap.update({ "system.detection.checked": [...checked, key] });
 
     const res = await adapter.rollDetection({
-      actor: token.actor, dc, requireSearch: det.requireSearch, minRank: det.minRank
+      actor, dc, requireSearch: det.requireSearch, minRank: det.minRank
     });
     if (res.skipped) {
-      // Requirements unmet: do not consume the token's one check; it may retry while searching.
-      const fresh = trap.system.detection.checked.filter((u) => u !== token.uuid);
+      // Requirements unmet: do not consume the target's one check; it may retry while searching.
+      const fresh = trap.system.detection.checked.filter((u) => u !== key);
       await trap.update({ "system.detection.checked": fresh });
       await note(res.skipped);
       return;
