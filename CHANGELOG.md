@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-11-22
 
-### Added (P9)
+### Added
 
 - Haunts and hazards: hazard actors (including haunts) can be turned into configured traps with their action, detection DC and reset time.
 - Re-arm timer: a reusable trap can re-arm itself after a set game time; the sheet and the Trap Manager show the time left.

@@ -77,7 +77,7 @@ Traps can play a video animation over their effect area when they fire. This is 
 - Foundry splits a long drag into several movement segments; the module treats them as one movement (it dedupes on the root movement id). A token repositioned across a trap by a direct edit or teleport also counts as crossing it.
 - Verified on Foundry 14.370 only. sf2e (1.7) shares the pf2e adapter: its save request, damage card and hazard action were checked live, but the full multi-client pass ([docs/qa-checklist.md](docs/qa-checklist.md)) ran in pf2e only, and sf2e detection was not tested live.
 - With **Tokens moved by a GM trigger it** on, a GM-dragged token was once not stopped at the edge right after the setting was toggled (the prompt still appeared). It stopped correctly in every later run.
-- Not yet tested: two GMs online at once, and a world with a system other than pf2e/sf2e (the generic payloads were checked by forcing the generic adapter).
+- Not yet tested: two GMs online at once, and a world with a system other than pf2e/sf2e (the generic payloads were checked by forcing the generic adapter). For 0.2.0 animations and hazards: the free JB2A version (`JB2A_DnD5e`), sf2e hazards, and 14 of the 17 animation presets (fire cone, darts and haunt spirits were checked on the map).
 
 ## API
 
