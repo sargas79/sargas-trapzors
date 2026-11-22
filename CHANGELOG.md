@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Select affected** did nothing unless the Tokens layer was active. It now switches to the Tokens layer and selects the tokens, and warns if none can be selected.
+- **Save trap** now closes the trap sheet after a successful save. A failed save keeps it open, and **Place…**, the previews and **Test fire** still save without closing.
+
 ## 0.4.1 — 2026-11-22
 
 ### Changed

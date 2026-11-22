@@ -24,6 +24,7 @@
   "SARGAS_TRAPZORS.Payload.SaveLine": "{statistic} save",
   "SARGAS_TRAPZORS.Payload.Basic": "(basic)",
   "SARGAS_TRAPZORS.Notify.NoneOnScene": "None of those tokens are on the viewed scene.",
+  "SARGAS_TRAPZORS.Notify.NoneSelectable": "Those tokens can't be selected from here, for example because they are on another level.",
   "SARGAS_TRAPZORS.Notify.GenericPayloads": "Sargas Trapzors: system \"{system}\" has no dedicated adapter; using generic payloads.",
   "SARGAS_TRAPZORS.Pf2e.HazardMissingActor": "The linked hazard actor no longer exists.",
   "SARGAS_TRAPZORS.Pf2e.HazardMissingItem": "The linked hazard item no longer exists on that actor.",

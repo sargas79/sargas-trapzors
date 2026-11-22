@@ -36,15 +36,22 @@ export async function postGMSummary({ trapName, triggering, affected, dc, notes,
   return ChatMessage.create({ content: parts.join(""), whisper: gmIds(), speaker: ChatMessage.getSpeaker({ alias: trapName }) });
 }
 
-/** Select the given tokens on the viewed scene (GM clients only). */
+/**
+ * Select the given tokens on the viewed scene (GM clients only). Core's control() does nothing unless the
+ * Tokens layer is active (foundry.mjs PlaceableObject#control), so switch to it first; activate() also
+ * switches the scene controls.
+ */
 function selectTokens(uuids) {
-  const docs = uuids.map((u) => fromUuidSync(u)).filter((t) => t && t.parent === canvas.scene);
+  const docs = uuids.map((u) => fromUuidSync(u)).filter((t) => t?.object && t.parent === canvas.scene);
   if (!docs.length) {
     ui.notifications.warn(L("SARGAS_TRAPZORS.Notify.NoneOnScene"));
     return;
   }
+  if (!canvas.tokens.active) canvas.tokens.activate();
   canvas.tokens.releaseAll();
-  for (const t of docs) t.object?.control({ releaseOthers: false });
+  let selected = 0;
+  for (const t of docs) if (t.object.control({ releaseOthers: false })) selected++;
+  if (!selected) ui.notifications.warn(L("SARGAS_TRAPZORS.Notify.NoneSelectable"));
 }
 
 /** Enrich hazard HTML (so @Check links become buttons). @param {string} html @param {Actor} [actor] */
