@@ -40,5 +40,11 @@
   "SARGAS_TRAPZORS.Detection.SkipRank": "Perception rank too low",
   "SARGAS_TRAPZORS.Detection.SkipNoPerception": "no Perception statistic",
   "SARGAS_TRAPZORS.Detection.SkipNoDC": "no detection DC is configured",
-  "SARGAS_TRAPZORS.Detection.Unsupported": "Sargas Trapzors: trap detection is only available in Pathfinder 2e and Starfinder 2e."
+  "SARGAS_TRAPZORS.Detection.Unsupported": "Sargas Trapzors: trap detection is only available in Pathfinder 2e and Starfinder 2e.",
+  "SARGAS_TRAPZORS.Links.Role.effect": "Effect area",
+  "SARGAS_TRAPZORS.Links.Role.detection": "Detection area",
+  "SARGAS_TRAPZORS.Links.Role.trigger": "Trigger region",
+  "SARGAS_TRAPZORS.Links.DeleteTitle": "Delete trap",
+  "SARGAS_TRAPZORS.Links.DeleteBody": "Delete trap \"{trap}\"? These regions will be deleted:",
+  "SARGAS_TRAPZORS.Links.AreaDeleted": "The {area} of trap {trap} was deleted; use Repair links."
 }

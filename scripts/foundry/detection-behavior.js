@@ -3,6 +3,8 @@ import { makeTriggerKey } from "../core/dedupe.js";
 import { evaluateEligibility } from "../core/eligibility.js";
 import { rootMovementId } from "../core/movement.js";
 import { decideDetection } from "../core/detection.js";
+import { MODULE_ID } from "../core/constants.js";
+import { resolveTrapRef } from "../core/links.js";
 import { isAuthority, validateTokenInRegion, tokenEligibilityInput } from "./authority.js";
 import { getDetectionService } from "./detection-service.js";
 
@@ -23,6 +25,15 @@ export default class DetectionBehaviorType extends foundry.data.regionBehaviors.
     };
   }
 
+  /**
+   * The linked trap, resolved by ids inside this region's own scene. trapBehaviorUuid embeds the scene id,
+   * which changes on scene duplication/import, so it is only a fallback source for the ids.
+   */
+  #resolveTrap() {
+    const ref = resolveTrapRef(this.region?.flags?.[MODULE_ID], this.trapBehaviorUuid);
+    return ref ? this.region?.parent?.regions?.get(ref.trapRegionId)?.behaviors?.get(ref.trapBehaviorId) ?? null : null;
+  }
+
   /** @this {DetectionBehaviorType} */
   static async #onTokenMoveIn(event) {
     if (!isAuthority()) return;
@@ -30,7 +41,7 @@ export default class DetectionBehaviorType extends foundry.data.regionBehaviors.
     const service = getDetectionService();
     if (!token || !service) return;
 
-    const trap = this.trapBehaviorUuid ? fromUuidSync(this.trapBehaviorUuid) : null;
+    const trap = this.#resolveTrap();
     const sys = trap?.system;
     const eligible = !!trap && evaluateEligibility(tokenEligibilityInput(token), sys.trigger, {
       moverIsGM: !!event.user?.isGM,
