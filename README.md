@@ -23,7 +23,7 @@ Then enable **Sargas Trapzors** in your world.
 1. **Create the trap.** Open the Region layer in the scene controls and click **Create Trap**, then draw a region (this is the *trigger area*). It becomes a GM-only trap and its sheet opens. You can also select an existing region and click **Create Trap**. Click the tool again to cancel.
 2. **Configure it** in the sheet, which has four tabs:
    - **Effect**: choose the **Shape** (Line, Cone, Emanation) and **Origin** (Fixed spot or Triggering token). Use **Place...** to create the effect area, then move, resize and rotate it with Foundry's native region tools. **Preview** shows it to you only. **Show area on fire** sets how many seconds everyone sees it. **Blocked by walls** clips the area to movement walls.
-   - **Payload**: **Flavor only**, **Damage and save**, or **Hazard action** (pf2e/sf2e only). Flavor text is shown to everyone; a sound can be added. A damage payload takes a damage formula, damage type, save, save DC and Basic save. A hazard payload links a hazard actor and one of its actions.
+   - **Payload**: **Flavor only**, **Damage and save**, or **Hazard action or strike** (pf2e/sf2e only). Flavor text is shown to everyone; a sound can be added. A damage payload takes a damage formula, damage type, save, save DC and Basic save. A hazard payload links a hazard actor and one of its actions or strikes. A strike is rolled against the AC of each affected (or triggering) token, up to 10 targets; the system posts its attack cards, the GM rolls damage from them (pf2e shows the Damage buttons to the hazard's owner), and anyone can then apply it from the damage card. Damage is never applied automatically. Fire as test whispers a one-line result per target to GMs instead.
    - **Lifecycle**: **Enabled**, **Reusable**, the current **Status** with **Reset**, **Last fired**, and **Who sets it off** (token dispositions, actor types, whether hidden tokens or tokens moved by a GM trigger it).
    - **Detection**: **Players can notice this trap**, the detection area (a GM-only emanation around the trigger), the Stealth DC (set here or from the linked hazard), **Only while using Search**, **Minimum rank**, and **Reveal now**.
 3. **Test it.** **Test fire** posts to GMs only and changes nothing.
@@ -71,7 +71,6 @@ Traps can play a video animation over their effect area when they fire. This is 
 
 ## Known limitations
 
-- **Hazard strikes are not supported**, only hazard **actions** (a linked hazard item that is not an action is rejected with a notice).
 - **Detection works only in pf2e and sf2e.** In other systems it is unavailable.
 - **Blocked by walls** needs the effect region to have exactly one level, and is computed on the viewing GM's client.
 - Foundry splits a long drag into several movement segments; the module treats them as one movement (it dedupes on the root movement id). A token repositioned across a trap by a direct edit or teleport also counts as crossing it.

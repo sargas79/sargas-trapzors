@@ -1,6 +1,6 @@
 // Foundry-dependent (pf2e/sf2e). Never import from tests.
 import { TrapAdapter } from "./adapter-api.js";
-import { buildDamageFormula, buildCheckSyntax, checkHazardLink } from "../core/pf2e-text.js";
+import { buildDamageFormula, buildCheckSyntax, checkHazardLink, strikeTargets } from "../core/pf2e-text.js";
 import { checkRequirements, isSuccess } from "../core/detection.js";
 import { buildSaveLine, buildRollFlavor, decideDelivery } from "../core/payload-text.js";
 import { parseMinRank, hazardKind, pickTriggerAction, parseRearmSeconds } from "../core/hazard-info.js";
@@ -22,10 +22,17 @@ async function resolveHazard(payload) {
   return { actor, item, check };
 }
 
+const DEGREE_KEYS = {
+  0: "SARGAS_TRAPZORS.Pf2e.DegreeCritFail",
+  1: "SARGAS_TRAPZORS.Pf2e.DegreeFail",
+  2: "SARGAS_TRAPZORS.Pf2e.DegreeSuccess",
+  3: "SARGAS_TRAPZORS.Pf2e.DegreeCritSuccess"
+};
+
 const REASON_KEYS = {
   "missing-actor": "SARGAS_TRAPZORS.Pf2e.HazardMissingActor",
   "missing-item": "SARGAS_TRAPZORS.Pf2e.HazardMissingItem",
-  "not-an-action": "SARGAS_TRAPZORS.Pf2e.HazardNotAction"
+  "unsupported-item": "SARGAS_TRAPZORS.Pf2e.HazardUnsupportedItem"
 };
 
 export class Pf2eAdapter extends TrapAdapter {
@@ -76,9 +83,10 @@ export class Pf2eAdapter extends TrapAdapter {
   }
 
   /** @param {import("./adapter-api.js").PayloadContext} ctx */
-  async postHazardAction({ payload, test, speaker }) {
-    const { item, check } = await resolveHazard(payload);
+  async postHazardAction({ payload, test, speaker, affected, triggering }) {
+    const { actor, item, check } = await resolveHazard(payload);
     if (!check.ok) return { notes: [L(REASON_KEYS[check.reason])] };
+    if (check.kind === "strike") return this.#postHazardStrike({ actor, item, payload, test, affected, triggering });
     if (!test) {
       await item.toMessage(undefined, { create: true });
       return { notes: [] };
@@ -93,6 +101,68 @@ export class Pf2eAdapter extends TrapAdapter {
     data.content = `<strong>${esc(decideDelivery({ test }).prefix.trim())}</strong> ${data.content ?? ""}`;
     await ChatMessage.create(data);
     return { notes: [] };
+  }
+
+  /**
+   * Roll the hazard strike's first variant (no MAP) against each target token; the system posts its own attack
+   * card with Damage / Critical buttons. Damage is never applied automatically.
+   * Options (pf2e 14.370 StrikeData variants[0].roll, pf2e.mjs ~20418): `target` (Token object), `event`.
+   * The dialog is skipped through a synthetic event (eventToRollParams, pf2e.mjs ~13752: shiftKey flips the
+   * showCheckDialogs default); in test mode ctrlKey makes pf2e post with messageMode "gm" (GM-only whisper).
+   */
+  async #postHazardStrike({ actor, item, payload, test, affected, triggering }) {
+    const notes = [];
+    const strike = actor.system?.actions?.find((a) => a.type === "strike" && a.item?.id === item.id);
+    const variant = strike?.variants?.[0];
+    if (!variant?.roll) return { notes: [L("SARGAS_TRAPZORS.Pf2e.StrikeMissing")] };
+    const ids = (docs) => (docs ?? []).map((d) => d?.id).filter(Boolean);
+    const { ids: targetIds, capped } = strikeTargets({
+      affected: ids(affected), triggering: ids(triggering), mode: payload.hazard?.strikeTargets ?? "affected"
+    });
+    if (!targetIds.length) return { notes: [L("SARGAS_TRAPZORS.Pf2e.StrikeNoTargets")] };
+    const byId = new Map([...(affected ?? []), ...(triggering ?? [])].map((d) => [d.id, d]));
+    // shiftKey flips pf2e's showCheckDialogs default, so the roll dialog is always skipped.
+    const event = { shiftKey: !!game.user.settings?.showCheckDialogs, ctrlKey: false, metaKey: false };
+    const testLines = [];
+    let rolled = 0;
+    for (const id of targetIds) {
+      const doc = byId.get(id);
+      const token = doc?.object;
+      if (!token || doc.parent?.id !== canvas.scene?.id) {
+        notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeOffScene", { name: esc(doc?.name ?? id) }));
+        continue;
+      }
+      try {
+        if (!test) {
+          await variant.roll({ target: token, event });
+        } else {
+          // Test mode: roll without a chat message (a GM-only pf2e roll would show players a
+          // "privately rolled" placeholder) and whisper a plain summary line to GMs instead.
+          const roll = await variant.roll({ target: token, event, createMessage: false });
+          const ac = token.actor?.armorClass?.value ?? token.actor?.system?.attributes?.ac?.value ?? "?";
+          const dos = roll?.degreeOfSuccess;
+          testLines.push(L("SARGAS_TRAPZORS.Pf2e.StrikeTestLine", {
+            strike: esc(item.name), target: esc(doc.name), total: roll?.total ?? "?", ac,
+            result: L(DEGREE_KEYS[dos] ?? "SARGAS_TRAPZORS.Pf2e.DegreeUnknown")
+          }));
+        }
+        rolled++;
+      } catch (err) {
+        console.error("sargas-trapzors | strike roll failed", err);
+        notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeFailed", { name: esc(doc.name) }));
+      }
+    }
+    if (testLines.length) {
+      const prefix = esc(decideDelivery({ test }).prefix.trim());
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        whisper: gmIds(),
+        content: `<p><strong>${prefix}</strong></p><ul>${testLines.map((l) => `<li>${l}</li>`).join("")}</ul>`
+      });
+    }
+    notes.unshift(L("SARGAS_TRAPZORS.Pf2e.StrikeRolled", { count: rolled }));
+    if (capped) notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeCapped", { max: 10 }));
+    return { notes };
   }
 
   /** Fails early for a broken hazard link so the trap can stay pending. */

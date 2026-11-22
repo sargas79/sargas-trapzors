@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Hazard strikes
+
+- A hazard payload can now link a hazard strike (melee or ranged) as well as an action. The strike is rolled against the AC of each affected token (or the triggering tokens, chosen on the Payload tab), up to 10 targets, with the roll dialog skipped. The system's attack cards carry the Damage and Critical buttons (shown to the GM); damage is never applied automatically. Fire as test whispers a one-line result per target to GMs, with no placeholder for players.
+
 ## 0.2.0 — 2026-11-22
 
 ### Added
@@ -24,4 +30,4 @@
 
 ### Known limitations
 
-See the [README](README.md#known-limitations) and its privacy section (trap data is readable by players, hazard strikes, detection systems, wall blocking).
+See the [README](README.md#known-limitations) and its privacy section (trap data is readable by players, detection systems, wall blocking).

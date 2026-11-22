@@ -69,6 +69,12 @@ test("nullable strings and trimming", () => {
   const r = formToTrapUpdate(f);
   assert.equal(r.update["system.payload.hazard.actorUuid"], "Actor.a");
   assert.equal(r.update["system.payload.hazard.itemId"], "i1");
+  assert.equal(r.update["system.payload.hazard.strikeTargets"], "affected");
+  f.payload.hazard.strikeTargets = "triggering";
+  assert.equal(formToTrapUpdate(f).update["system.payload.hazard.strikeTargets"], "triggering");
+  f.payload.hazard.strikeTargets = "bogus";
+  assert.deepEqual(errs(formToTrapUpdate(f)), ["payload.hazard.strikeTargets:StrikeTargets"]);
+  f.payload.hazard.strikeTargets = "";
   f.payload.soundPath = " a.ogg ";
   assert.equal(formToTrapUpdate(f).update["system.payload.soundPath"], "a.ogg");
 });

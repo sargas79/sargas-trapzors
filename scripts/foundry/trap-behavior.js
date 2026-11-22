@@ -86,7 +86,8 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         }),
         hazard: new fields.SchemaField({
           actorUuid: nullableStr(),
-          itemId: nullableStr()
+          itemId: nullableStr(),
+          strikeTargets: str({ choices: ["affected", "triggering"], initial: "affected" })
         })
       }),
       detection: new fields.SchemaField({
