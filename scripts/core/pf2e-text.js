@@ -49,3 +49,16 @@ export function strikeTargets({ affected = [], triggering = [], mode = "affected
   const cap = Number.isInteger(max) && max > 0 ? max : 10;
   return { ids: list.slice(0, cap), capped: list.length > cap };
 }
+
+/**
+ * Message flags that give PF2e Toolbelt's Targets Helper the trap's affected tokens, so its save rows and
+ * damage targets appear without the GM targeting anyone (its preCreate hook keeps a targets flag already
+ * set, and its damage links copy the card's targets to the damage card). Only token UUIDs are kept: an
+ * actor with no token (theater of the mind) has nothing to show. Empty when there is no token.
+ * @param {string[]} uuids
+ * @returns {object} flags to merge into the message data
+ */
+export function toolbeltTargetFlags(uuids) {
+  const targets = [...new Set((uuids ?? []).filter((u) => typeof u === "string" && /(^|\.)Token\.[^.]+$/.test(u)))];
+  return targets.length ? { "pf2e-toolbelt": { targetHelper: { targets } } } : {};
+}

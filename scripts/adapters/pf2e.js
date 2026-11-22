@@ -1,6 +1,6 @@
 // Foundry-dependent (pf2e/sf2e). Never import from tests.
 import { TrapAdapter } from "./adapter-api.js";
-import { buildDamageFormula, buildCheckSyntax, checkHazardLink, strikeTargets } from "../core/pf2e-text.js";
+import { buildDamageFormula, buildCheckSyntax, checkHazardLink, strikeTargets, toolbeltTargetFlags } from "../core/pf2e-text.js";
 import { checkRequirements, isSuccess } from "../core/detection.js";
 import { buildSaveLine, buildRollFlavor, decideDelivery } from "../core/payload-text.js";
 import { parseMinRank, hazardKind, pickTriggerAction, parseRearmSeconds } from "../core/hazard-info.js";
@@ -14,6 +14,10 @@ const INDEX_FIELDS = [
 const esc = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 const gmIds = () => ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
 const L = (k, d) => (d ? game.i18n.format(k, d) : game.i18n.localize(k));
+
+/** PF2e Toolbelt Targets Helper flags for the affected tokens; empty when Toolbelt is not active. */
+const targetFlags = (affected) =>
+  (game.modules.get("pf2e-toolbelt")?.active ? toolbeltTargetFlags((affected ?? []).map((d) => d?.uuid)) : {});
 
 /** Resolve a hazard link into the actor, item and validation result. */
 async function resolveHazard(payload) {
@@ -44,20 +48,21 @@ export class Pf2eAdapter extends TrapAdapter {
   #indexPromise = null;
 
   /** @param {import("./adapter-api.js").PayloadContext} ctx */
-  async rollPayload({ trapName, payload, test, speaker }) {
+  async rollPayload({ trapName, payload, test, speaker, affected }) {
     const { roll } = payload;
     const save = roll?.save;
     const dc = save?.dc ?? null;
     const notes = [];
     const d = decideDelivery({ test });
     const whisper = d.whisperToGMs ? gmIds() : undefined;
+    const flags = targetFlags(affected);
 
     // Save request first (public; pf2e settings decide DC visibility). Plain content, no rolls field.
     const checkSyntax = buildCheckSyntax({ statistic: save?.statistic, dc, basic: save?.basic });
     if (checkSyntax) {
       const html = await foundry.applications.ux.TextEditor.implementation.enrichHTML(checkSyntax);
       const prefix = d.prefix ? `<strong>${esc(d.prefix.trim())}</strong> ` : "";
-      await ChatMessage.create({ speaker, content: prefix + html, ...(whisper ? { whisper } : {}) });
+      await ChatMessage.create({ speaker, flags, content: prefix + html, ...(whisper ? { whisper } : {}) });
     }
 
     // Damage card with pf2e's apply buttons.
@@ -75,9 +80,9 @@ export class Pf2eAdapter extends TrapAdapter {
         // No `rolls` field, so players get no "privately rolled" placeholder.
         await r.evaluate();
         const content = await r.render();
-        await ChatMessage.create({ speaker, flavor, content, whisper });
+        await ChatMessage.create({ speaker, flags, flavor, content, whisper });
       } else {
-        await r.toMessage({ speaker, flavor });
+        await r.toMessage({ speaker, flavor, flags });
       }
     }
     return { dc, notes };
@@ -88,14 +93,16 @@ export class Pf2eAdapter extends TrapAdapter {
     const { actor, item, check } = await resolveHazard(payload);
     if (!check.ok) return { notes: [L(REASON_KEYS[check.reason])] };
     if (check.kind === "strike") return this.#postHazardStrike({ actor, item, payload, test, affected, triggering });
-    if (!test) {
-      await item.toMessage(undefined, { create: true });
-      return { notes: [] };
-    }
-    // Test mode: get the message data without creating it, then whisper plain content to GMs.
+    // Build the card without creating it, so the affected tokens can be added for PF2e Toolbelt.
     const res = await item.toMessage(undefined, { create: false });
     const data = typeof res?.toObject === "function" ? res.toObject() : foundry.utils.deepClone(res ?? {});
     delete data._id;
+    data.flags = foundry.utils.mergeObject(data.flags ?? {}, targetFlags(affected), { inplace: false });
+    if (!test) {
+      await ChatMessage.create(data);
+      return { notes: [] };
+    }
+    // Test mode: whisper plain content to GMs.
     delete data.rolls;
     data.whisper = gmIds();
     data.speaker ??= speaker;

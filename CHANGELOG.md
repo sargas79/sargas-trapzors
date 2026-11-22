@@ -5,6 +5,7 @@
 ### Fixed
 
 - **Select affected** did nothing unless the Tokens layer was active. It now switches to the Tokens layer and selects the tokens, and warns if none can be selected.
+- With **PF2e Toolbelt** active, the damage card rolled from a hazard card showed no targets unless the GM had targeted someone. Hazard cards and damage-and-save cards now give Toolbelt's Targets Helper the affected tokens, so its target and save rows appear on its own.
 - **Save trap** now closes the trap sheet after a successful save. A failed save keeps it open, and **Place…**, the previews and **Test fire** still save without closing.
 
 ## 0.4.1 — 2026-11-22
