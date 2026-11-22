@@ -1,0 +1,49 @@
+<div class="st-manager">
+  <div class="st-toolbar">
+    <input type="search" name="filter" value="{{filter}}" placeholder="{{localize "SARGAS_TRAPZORS.Manager.Filter"}}" aria-label="{{localize "SARGAS_TRAPZORS.Manager.Filter"}}">
+    <span class="st-muted st-summary">{{summary}}</span>
+    <span class="st-chip {{#if hasAnchor}}st-chip-on{{/if}}"><i class="fa-solid fa-crosshairs" inert></i> {{anchorChip}}</span>
+  </div>
+
+  <div class="st-rows">
+    {{#each rows}}
+    <div class="st-row {{#if pending}}st-row-pending{{/if}} {{#if disabled}}st-row-disabled{{/if}}" data-uuid="{{uuid}}" data-name="{{key}}" {{#if hidden}}hidden{{/if}}>
+      <div class="st-cell st-cell-name">
+        <strong class="st-name">{{name}}</strong>
+        {{#if sub}}<span class="st-muted">{{sub}}</span>{{/if}}
+      </div>
+      <div class="st-cell">
+        <span class="st-pill st-status-{{status.key}}"><i class="st-dot" inert></i>{{status.label}}</span>
+        {{#if disabled}}<span class="st-pill st-disabled">{{localize "SARGAS_TRAPZORS.Status.disabled"}}</span>{{/if}}
+        {{#if revealed}}<span class="st-pill st-revealed">{{localize "SARGAS_TRAPZORS.Status.revealed"}}</span>{{/if}}
+      </div>
+      <div class="st-cell">{{kind}}</div>
+      <div class="st-cell st-areas">
+        <span class="st-area {{#if effect.broken}}st-area-broken{{/if}}" data-tooltip="{{effect.tooltip}}">
+          {{#if effect.broken}}<i class="fa-solid fa-triangle-exclamation" inert></i>{{/if}}{{effect.label}} {{#if effect.ok}}&#10003;{{else}}{{#unless effect.broken}}&mdash;{{/unless}}{{/if}}
+        </span>
+        <span class="st-area {{#if detection.broken}}st-area-broken{{/if}}" data-tooltip="{{detection.tooltip}}">
+          {{#if detection.broken}}<i class="fa-solid fa-triangle-exclamation" inert></i>{{/if}}{{detection.label}} {{#if detection.ok}}&#10003;{{else}}{{#unless detection.broken}}&mdash;{{/unless}}{{/if}}
+        </span>
+      </div>
+      <div class="st-cell st-actions">
+        {{#each buttons}}
+        <button type="button" class="{{cls}}" data-action="{{action}}"><i class="fa-solid {{icon}}" inert></i> {{label}}</button>
+        {{/each}}
+        <span class="st-menu-wrap">
+          <button type="button" class="icon fa-solid fa-ellipsis" data-action="toggleMenu" aria-haspopup="menu" aria-expanded="{{#if menuOpen}}true{{else}}false{{/if}}" aria-label="{{localize "SARGAS_TRAPZORS.Manager.MoreActions" name=name}}"></button>
+          <div class="st-menu" role="menu" popover="manual">
+            <button type="button" role="menuitem" data-action="pan"><i class="fa-solid fa-location-crosshairs" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.pan"}}</button>
+            <button type="button" role="menuitem" data-action="preview"><i class="fa-solid fa-eye" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.preview"}}</button>
+            <button type="button" role="menuitem" data-action="duplicate"><i class="fa-solid fa-copy" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.duplicate"}}</button>
+            <button type="button" role="menuitem" data-action="{{#if disabled}}enable{{else}}disable{{/if}}"><i class="fa-solid fa-power-off" inert></i> {{toggleLabel}}</button>
+            <button type="button" role="menuitem" class="st-danger-text" data-action="delete"><i class="fa-solid fa-trash" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.delete"}}</button>
+          </div>
+        </span>
+      </div>
+    </div>
+    {{else}}
+    <p class="st-empty st-muted">{{#if hasScene}}{{localize "SARGAS_TRAPZORS.Manager.Empty"}}{{else}}{{localize "SARGAS_TRAPZORS.Manager.NoScene"}}{{/if}}</p>
+    {{/each}}
+  </div>
+</div>

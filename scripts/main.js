@@ -7,6 +7,8 @@ import DetectionBehaviorType from "./foundry/detection-behavior.js";
 import { createDetectionService, createDetectionArea, reveal } from "./foundry/detection-service.js";
 import { registerChatHooks } from "./foundry/chat.js";
 import { getLinkStatus, repairLinks, deleteTrap, duplicateTrap, registerLinkedRegionHooks, cleanupOrphans } from "./foundry/linked-regions.js";
+import { TrapConfig } from "./apps/trap-config.js";
+import { registerSceneControls, createTrapFromRegion, openTrapManager } from "./apps/scene-controls.js";
 import { createTriggerService } from "./foundry/trigger-service.js";
 
 const log = createLogger({
@@ -26,6 +28,13 @@ Hooks.once("init", () => {
   CONFIG.RegionBehavior.typeLabels[`${MODULE_ID}.trapDetection`] = "SARGAS_TRAPZORS.Behavior.trapDetection.label";
   CONFIG.RegionBehavior.typeIcons[`${MODULE_ID}.trapDetection`] = "fa-solid fa-eye";
 
+  foundry.applications.apps.DocumentSheetConfig.registerSheet(CONFIG.RegionBehavior.documentClass, MODULE_ID, TrapConfig, {
+    types: [TRAP_TYPE],
+    makeDefault: true,
+    label: "SARGAS_TRAPZORS.Config.SheetLabel"
+  });
+  registerSceneControls();
+
   game.modules.get(MODULE_ID).api = {
     createDetectionArea,
     reveal,
@@ -36,7 +45,9 @@ Hooks.once("init", () => {
     getLinkStatus,
     repairLinks,
     deleteTrap,
-    duplicateTrap
+    duplicateTrap,
+    createTrapFromRegion,
+    openTrapManager
   };
 
   game.settings.register(MODULE_ID, "debug", {

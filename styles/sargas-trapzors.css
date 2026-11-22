@@ -1,1 +1,147 @@
-/* Sargas Trapzors styles (placeholder). */
+/* Sargas Trapzors styles. Dark-theme defaults; the light theme overrides the tokens below. */
+.sargas-trapzors {
+  --st-bg: #1e2027;
+  --st-bg-header: #16171c;
+  --st-bg-card: #252831;
+  --st-border: #3a3d48;
+  --st-muted: #b4b3bd;
+  --st-text: #e8e7ee;
+  --st-accent: #f0a040;
+  --st-accent-text: #1a1306;
+  --st-armed-bg: #173a27;
+  --st-armed-fg: #7fe0a4;
+  --st-pending-bg: #4a3410;
+  --st-pending-fg: #ffc970;
+  --st-spent-bg: #33343b;
+  --st-spent-fg: #c9c8d0;
+  --st-broken-bg: #3a1d1d;
+  --st-broken-border: #7a3434;
+  --st-broken-fg: #ffc6bf;
+  --st-control-h: 34px;
+}
+
+.sargas-trapzors.theme-light,
+.theme-light .sargas-trapzors {
+  --st-bg: #f2f0ea;
+  --st-bg-header: #e4e1d8;
+  --st-bg-card: #fbfaf6;
+  --st-border: #b9b4a6;
+  --st-muted: #55525c;
+  --st-text: #1d1b22;
+  --st-accent: #d98a1f;
+  --st-accent-text: #1a1306;
+  --st-armed-bg: #cdeedb;
+  --st-armed-fg: #145a34;
+  --st-pending-bg: #fbe3b4;
+  --st-pending-fg: #6b4308;
+  --st-spent-bg: #dedde3;
+  --st-spent-fg: #42414a;
+  --st-broken-bg: #fbdcd8;
+  --st-broken-border: #c25a52;
+  --st-broken-fg: #7a1d16;
+}
+
+.sargas-trapzors .window-content { background: var(--st-bg); color: var(--st-text); }
+.sargas-trapzors .st-muted { color: var(--st-muted); font-size: var(--font-size-12, 12px); }
+.sargas-trapzors button,
+.sargas-trapzors select,
+.sargas-trapzors input[type="text"],
+.sargas-trapzors input[type="number"],
+.sargas-trapzors input[type="search"] { min-height: var(--st-control-h); }
+
+/* Pills and badges */
+.sargas-trapzors .st-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.sargas-trapzors .st-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
+.sargas-trapzors .st-status-armed { background: var(--st-armed-bg); color: var(--st-armed-fg); }
+.sargas-trapzors .st-status-pending { background: var(--st-pending-bg); color: var(--st-pending-fg); }
+.sargas-trapzors .st-status-spent { background: var(--st-spent-bg); color: var(--st-spent-fg); }
+.sargas-trapzors .st-disabled {
+  background: transparent; color: var(--st-muted); border: 1px solid var(--st-border);
+  background-image: repeating-linear-gradient(135deg, transparent 0 4px, var(--st-border) 4px 5px);
+}
+.sargas-trapzors .st-revealed { background: transparent; color: var(--st-muted); border: 1px solid var(--st-border); }
+
+/* Buttons */
+.sargas-trapzors button.st-primary { background: var(--st-accent); color: var(--st-accent-text); border-color: var(--st-accent); font-weight: 700; }
+.sargas-trapzors button.st-outline { background: transparent; color: var(--st-accent); border: 1px solid var(--st-accent); }
+.sargas-trapzors button.st-danger { background: var(--st-broken-bg); color: var(--st-broken-fg); border: 1px solid var(--st-broken-border); }
+.sargas-trapzors button.st-secondary { background: var(--st-bg-card); border: 1px solid var(--st-border); }
+.sargas-trapzors .st-danger-text { color: var(--st-broken-fg); }
+.sargas-trapzors button.icon { min-width: var(--st-control-h); }
+
+/* Sheet header and strips */
+.trap-config .st-header { background: var(--st-bg-header); border-bottom: 1px solid var(--st-border); padding: 8px 12px; }
+.trap-config .st-title { display: flex; align-items: center; gap: 8px; }
+.trap-config .st-title h2 { margin: 0; border: none; flex: 1; font-size: 1.25em; }
+.trap-config .st-title-icon { color: var(--st-accent); }
+.trap-config .st-pills { display: flex; gap: 6px; }
+.trap-config .st-strip {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 12px; margin-bottom: 10px; border: 1px solid var(--st-border); border-radius: 6px; background: var(--st-bg-card);
+}
+.trap-config .st-strip.st-broken { background: var(--st-broken-bg); border-color: var(--st-broken-border); color: var(--st-broken-fg); }
+.trap-config .st-strip.st-broken .st-muted { color: inherit; }
+.trap-config .st-strip-text { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
+.trap-config .st-strip-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.trap-config .st-warning { color: var(--st-broken-fg); background: var(--st-broken-bg); border: 1px solid var(--st-broken-border); border-radius: 4px; padding: 4px 8px; }
+.trap-config .st-checks { flex-wrap: wrap; gap: 4px 14px; }
+.trap-config .st-footer { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--st-border); background: var(--st-bg-header); }
+.trap-config .st-footer-hint { flex: 1; }
+.trap-config .tab { padding: 8px 12px; }
+
+/* Segmented radio groups */
+.sargas-trapzors .st-segmented { display: inline-flex; border: 1px solid var(--st-border); border-radius: 6px; overflow: hidden; }
+.sargas-trapzors .st-segmented label { display: flex; margin: 0; cursor: pointer; }
+.sargas-trapzors .st-segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.sargas-trapzors .st-segmented span {
+  display: inline-flex; align-items: center; min-height: var(--st-control-h); padding: 0 14px;
+  background: var(--st-bg-card); border-right: 1px solid var(--st-border);
+}
+.sargas-trapzors .st-segmented label:last-child span { border-right: none; }
+.sargas-trapzors .st-segmented input:checked + span { background: var(--st-accent); color: var(--st-accent-text); font-weight: 700; }
+.sargas-trapzors .st-segmented input:focus-visible + span { outline: 2px solid var(--st-accent); outline-offset: -2px; }
+
+/* Trap Manager */
+.trap-manager .st-manager { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+.trap-manager .st-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.trap-manager .st-toolbar input[type="search"] { flex: 0 1 220px; }
+.trap-manager .st-summary { flex: 1; }
+.trap-manager .st-chip { border: 1px solid var(--st-border); border-radius: 999px; padding: 4px 12px; color: var(--st-muted); }
+.trap-manager .st-chip-on { border-color: var(--st-accent); color: var(--st-text); }
+.trap-manager .st-rows { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-bottom: 150px; }
+.trap-manager .st-row {
+  display: grid; grid-template-columns: minmax(150px, 2fr) minmax(110px, 1fr) minmax(90px, 1fr) minmax(110px, 1fr) auto;
+  gap: 10px; align-items: center; position: relative;
+  padding: 8px 12px; background: var(--st-bg-card); border: 1px solid var(--st-border); border-radius: 6px;
+}
+.trap-manager .st-row[hidden] { display: none; }
+.trap-manager .st-row-pending { background: var(--st-pending-bg); border-color: var(--st-pending-fg); }
+.trap-manager .st-row-disabled { border-style: dashed; }
+.trap-manager .st-row-disabled .st-name { text-decoration: line-through; }
+.trap-manager .st-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.trap-manager .st-cell.st-cell-name .st-name { overflow: hidden; text-overflow: ellipsis; }
+.trap-manager .st-cell:nth-child(2) { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+.trap-manager .st-actions { flex-direction: row; justify-content: flex-end; align-items: center; gap: 4px; flex-wrap: wrap; }
+.trap-manager .st-area-broken { color: var(--st-broken-fg); background: var(--st-broken-bg); border-radius: 4px; padding: 0 4px; }
+.trap-manager .st-menu-wrap { position: relative; }
+.trap-manager .st-menu {
+  position: fixed; inset: auto; margin: 0; min-width: 220px; color: var(--color-text-primary, #ecebe6);
+  display: flex; flex-direction: column; gap: 2px; padding: 4px;
+  background: var(--st-bg-header); border: 1px solid var(--st-border); border-radius: 6px; box-shadow: 0 4px 14px rgb(0 0 0 / 0.4);
+}
+.trap-manager .st-menu:not(:popover-open) { display: none; }
+.trap-manager .st-menu button { justify-content: flex-start; background: transparent; border: none; }
+.trap-manager .st-menu button:hover { background: var(--st-bg-card); }
+.trap-manager .st-empty { text-align: center; padding: 24px 0; }
+
+/* Armed state of the Create Trap scene control */
+#scene-controls-tools button.st-armed { background: var(--color-warm-2, #f0a040); color: #1a1306; }
+
+/* Keep the sheet inside the viewport: the active tab scrolls instead of the window growing. */
+.application.trap-config { max-height: calc(100vh - 110px); }
+.application.trap-config .window-content { overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.application.trap-config .window-content > .tab.active { flex: 1 1 auto; min-height: 0; overflow-y: auto; }

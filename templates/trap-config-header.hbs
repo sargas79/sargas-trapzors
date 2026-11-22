@@ -1,0 +1,16 @@
+<header class="st-header">
+  <div class="st-title">
+    <i class="fa-solid fa-triangle-exclamation st-title-icon" inert></i>
+    <h2>{{localize "SARGAS_TRAPZORS.Behavior.trap.label"}}: {{trapName}}</h2>
+    <span class="st-pills">
+      <span class="st-pill st-status-{{status.key}}"><i class="st-dot" inert></i>{{status.label}}</span>
+      {{#if disabled}}<span class="st-pill st-disabled">{{localize "SARGAS_TRAPZORS.Status.disabled"}}</span>{{/if}}
+    </span>
+  </div>
+  <div class="form-group">
+    <label for="st-name">{{localize "SARGAS_TRAPZORS.Config.Name"}}</label>
+    <div class="form-fields">
+      <input id="st-name" type="text" name="name" value="{{trapName}}" placeholder="{{localize "SARGAS_TRAPZORS.Config.NamePlaceholder"}}">
+    </div>
+  </div>
+</header>

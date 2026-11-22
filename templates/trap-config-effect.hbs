@@ -1,0 +1,52 @@
+<section class="tab {{tab.cssClass}}" data-tab="effect" data-group="primary">
+  <div class="st-strip {{#if effectStrip.broken}}st-broken{{/if}}">
+    <i class="fa-solid {{effectStrip.icon}} st-strip-icon" inert></i>
+    <div class="st-strip-text">
+      <strong>{{effectStrip.title}}</strong>
+      <span class="st-muted">{{effectStrip.sub}}</span>
+    </div>
+    <div class="st-strip-actions">
+      {{#if effectStrip.broken}}
+      <button type="button" class="st-danger" data-action="repairLinks"><i class="fa-solid fa-wrench" inert></i> {{localize "SARGAS_TRAPZORS.Config.RepairLinks"}}</button>
+      {{/if}}
+      <button type="button" data-action="previewEffect" {{#unless hasEffectArea}}disabled{{/unless}}>
+        <i class="fa-solid fa-eye" inert></i> {{localize "SARGAS_TRAPZORS.Config.Preview"}}
+      </button>
+      <button type="button" data-action="placeEffect" {{#unless editable}}disabled{{/unless}}>
+        <i class="fa-solid fa-draw-polygon" inert></i> {{effectStrip.placeLabel}}
+      </button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>{{localize "SARGAS_TRAPZORS.Config.Shape.label"}}</label>
+    <div class="form-fields">
+      <div class="st-segmented" role="radiogroup" aria-label="{{localize "SARGAS_TRAPZORS.Config.Shape.label"}}">
+        {{#each shapes}}<label><input type="radio" name="effect.shape" value="{{value}}" {{#if selected}}checked{{/if}}><span>{{label}}</span></label>{{/each}}
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>{{localize "SARGAS_TRAPZORS.Config.Anchor.label"}}</label>
+    <div class="form-fields">
+      <div class="st-segmented" role="radiogroup" aria-label="{{localize "SARGAS_TRAPZORS.Config.Anchor.label"}}">
+        {{#each anchors}}<label><input type="radio" name="effect.anchor" value="{{value}}" {{#if selected}}checked{{/if}}><span>{{label}}</span></label>{{/each}}
+      </div>
+    </div>
+    <p class="hint">{{anchorHint}}</p>
+  </div>
+  <div class="form-group">
+    <label for="st-reveal-seconds">{{localize "SARGAS_TRAPZORS.Config.RevealSeconds"}}</label>
+    <div class="form-fields">
+      <input id="st-reveal-seconds" type="number" name="effect.revealSeconds" value="{{v.effect.revealSeconds}}" min="0" step="any">
+      <span class="st-muted">{{localize "SARGAS_TRAPZORS.Config.RevealSecondsUnit"}}</span>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="st-walls">{{localize "SARGAS_TRAPZORS.Config.BlockedByWalls"}}</label>
+    <div class="form-fields">
+      <input id="st-walls" type="checkbox" name="effect.blockedByWalls" {{#if v.effect.blockedByWalls}}checked{{/if}}>
+    </div>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Config.BlockedByWallsHint"}}</p>
+  </div>
+</section>
