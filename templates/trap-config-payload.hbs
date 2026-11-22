@@ -1,0 +1,80 @@
+<section class="tab {{tab.cssClass}}" data-tab="payload" data-group="primary">
+  <div class="form-group">
+    <label>{{localize "SARGAS_TRAPZORS.Config.Kind.label"}}</label>
+    <div class="form-fields">
+      <div class="st-segmented" role="radiogroup" aria-label="{{localize "SARGAS_TRAPZORS.Config.Kind.label"}}">
+        {{#each kinds}}<label><input type="radio" name="payload.kind" value="{{value}}" {{#if selected}}checked{{/if}}><span>{{label}}</span></label>{{/each}}
+      </div>
+    </div>
+    {{#if kindHint}}<p class="hint">{{kindHint}}</p>{{/if}}
+  </div>
+  <div class="form-group stacked">
+    <label for="st-flavor">{{localize "SARGAS_TRAPZORS.Config.Flavor"}}</label>
+    <textarea id="st-flavor" name="payload.flavor" rows="4">{{v.payload.flavor}}</textarea>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Config.FlavorHint"}}</p>
+  </div>
+  <div class="form-group">
+    <label for="st-sound">{{localize "SARGAS_TRAPZORS.Config.Sound"}}</label>
+    <div class="form-fields">
+      <input id="st-sound" type="text" name="payload.soundPath" value="{{soundPath}}">
+      <button type="button" class="icon fa-solid fa-file-audio" data-action="browseSound" data-tooltip="SARGAS_TRAPZORS.Config.BrowseSound" aria-label="{{localize "SARGAS_TRAPZORS.Config.BrowseSound"}}"></button>
+    </div>
+  </div>
+
+  {{#if isRoll}}
+  <fieldset>
+    <legend>{{localize "SARGAS_TRAPZORS.Config.Kind.roll"}}</legend>
+    <div class="form-group">
+      <label for="st-damage">{{localize "SARGAS_TRAPZORS.Config.Damage"}}</label>
+      <div class="form-fields"><input id="st-damage" type="text" name="payload.roll.damage" value="{{v.payload.roll.damage}}" placeholder="2d6"></div>
+    </div>
+    <div class="form-group">
+      <label for="st-damage-type">{{localize "SARGAS_TRAPZORS.Config.DamageType"}}</label>
+      <div class="form-fields"><input id="st-damage-type" type="text" name="payload.roll.damageType" value="{{v.payload.roll.damageType}}" placeholder="fire"></div>
+    </div>
+    <div class="form-group">
+      <label for="st-save-stat">{{localize "SARGAS_TRAPZORS.Config.SaveStatistic"}}</label>
+      <div class="form-fields">
+        <select id="st-save-stat" name="payload.roll.save.statistic">
+          {{#each stats}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="st-save-dc">{{localize "SARGAS_TRAPZORS.Config.SaveDC"}}</label>
+      <div class="form-fields"><input id="st-save-dc" type="number" name="payload.roll.save.dc" value="{{v.payload.roll.save.dc}}" min="0" step="1"></div>
+    </div>
+    <div class="form-group">
+      <label for="st-save-basic">{{localize "SARGAS_TRAPZORS.Config.SaveBasic"}}</label>
+      <div class="form-fields"><input id="st-save-basic" type="checkbox" name="payload.roll.save.basic" {{#if v.payload.roll.save.basic}}checked{{/if}}></div>
+    </div>
+  </fieldset>
+  {{/if}}
+
+  {{#if isHazard}}
+  <fieldset>
+    <legend>{{localize "SARGAS_TRAPZORS.Config.Kind.hazard"}}</legend>
+    <div class="form-group">
+      <label for="st-hazard-actor">{{localize "SARGAS_TRAPZORS.Config.HazardActor"}}</label>
+      <div class="form-fields">
+        <select id="st-hazard-actor" name="payload.hazard.actorUuid">
+          <option value="">{{localize "SARGAS_TRAPZORS.Config.Choose"}}</option>
+          {{#each hazard.actors}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="st-hazard-item">{{localize "SARGAS_TRAPZORS.Config.HazardItem"}}</label>
+      <div class="form-fields">
+        <select id="st-hazard-item" name="payload.hazard.itemId">
+          <option value="">{{localize "SARGAS_TRAPZORS.Config.Choose"}}</option>
+          {{#each hazard.items}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </div>
+    </div>
+    {{#if hazard.broken}}
+    <p class="st-warning"><i class="fa-solid fa-triangle-exclamation" inert></i> {{hazard.note}}</p>
+    {{/if}}
+  </fieldset>
+  {{/if}}
+</section>

@@ -1,0 +1,69 @@
+<section class="tab {{tab.cssClass}}" data-tab="detection" data-group="primary">
+  {{#unless detectionSupported}}
+  <p class="notification info st-notice">{{localize "SARGAS_TRAPZORS.Detection.Unsupported"}}</p>
+  {{else}}
+  <div class="st-strip {{#if detectionStrip.broken}}st-broken{{/if}}">
+    <i class="fa-solid {{detectionStrip.icon}} st-strip-icon" inert></i>
+    <div class="st-strip-text">
+      <strong>{{detectionStrip.title}}</strong>
+      <span class="st-muted">{{detectionStrip.sub}}</span>
+    </div>
+    <div class="st-strip-actions">
+      {{#if detectionStrip.broken}}
+      <button type="button" class="st-danger" data-action="repairLinks"><i class="fa-solid fa-wrench" inert></i> {{localize "SARGAS_TRAPZORS.Config.RepairLinks"}}</button>
+      {{/if}}
+      <button type="button" data-action="createDetection" {{#unless editable}}disabled{{/unless}}>
+        <i class="fa-solid fa-circle-dot" inert></i> {{detectionStrip.placeLabel}}
+      </button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="st-det-radius">{{localize "SARGAS_TRAPZORS.Config.Radius"}}</label>
+    <div class="form-fields">
+      <input id="st-det-radius" type="number" name="detectionRadius" value="{{v.detectionRadius}}" min="1" step="any">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="st-det-enabled">{{localize "SARGAS_TRAPZORS.Config.DetectionEnabled"}}</label>
+    <div class="form-fields"><input id="st-det-enabled" type="checkbox" name="detection.enabled" {{#if v.detection.enabled}}checked{{/if}}></div>
+  </div>
+  <div class="form-group">
+    <label>{{localize "SARGAS_TRAPZORS.Config.DCSource.label"}}</label>
+    <div class="form-fields">
+      <div class="st-segmented" role="radiogroup" aria-label="{{localize "SARGAS_TRAPZORS.Config.DCSource.label"}}">
+        {{#each dcSources}}<label><input type="radio" name="detection.dcSource" value="{{value}}" {{#if selected}}checked{{/if}}><span>{{label}}</span></label>{{/each}}
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="st-det-dc">{{localize "SARGAS_TRAPZORS.Config.DetectionDC"}}</label>
+    <div class="form-fields"><input id="st-det-dc" type="number" name="detection.dc" value="{{v.detection.dc}}" min="0" step="1"></div>
+  </div>
+  <div class="form-group">
+    <label for="st-det-rank">{{localize "SARGAS_TRAPZORS.Config.MinRank"}}</label>
+    <div class="form-fields">
+      <select id="st-det-rank" name="detection.minRank">
+        {{#each ranks}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="st-det-search">{{localize "SARGAS_TRAPZORS.Config.RequireSearch"}}</label>
+    <div class="form-fields"><input id="st-det-search" type="checkbox" name="detection.requireSearch" {{#if v.detection.requireSearch}}checked{{/if}}></div>
+  </div>
+  <div class="form-group">
+    <label>{{localize "SARGAS_TRAPZORS.Config.RevealedLabel"}}</label>
+    <div class="form-fields">
+      {{#if revealed}}
+      <span class="st-pill st-status-armed">{{localize "SARGAS_TRAPZORS.Config.RevealedYes"}}</span>
+      {{else}}
+      <span class="st-muted">{{localize "SARGAS_TRAPZORS.Config.RevealedNo"}}</span>
+      <button type="button" data-action="revealTrap" {{#unless editable}}disabled{{/unless}}>
+        <i class="fa-solid fa-eye" inert></i> {{localize "SARGAS_TRAPZORS.Config.RevealNow"}}
+      </button>
+      {{/if}}
+    </div>
+  </div>
+  {{/unless}}
+</section>

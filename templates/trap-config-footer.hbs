@@ -1,0 +1,9 @@
+<footer class="st-footer">
+  <span class="st-muted st-footer-hint">{{localize "SARGAS_TRAPZORS.Config.FooterHint"}}</span>
+  <button type="button" class="st-secondary" data-action="testFire" {{#unless editable}}disabled{{/unless}}>
+    <i class="fa-solid fa-flask" inert></i> {{localize "SARGAS_TRAPZORS.Config.TestFire"}}
+  </button>
+  <button type="submit" class="st-primary" {{#unless editable}}disabled{{/unless}}>
+    <i class="fa-solid fa-floppy-disk" inert></i> {{localize "SARGAS_TRAPZORS.Config.SaveTrap"}}
+  </button>
+</footer>

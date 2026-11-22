@@ -220,6 +220,103 @@ class TriggerService {
   }
 
   /* ------------------------------------------------------------ */
+  /* Public GM actions (Trap Manager). All require the active GM.   */
+
+  /** Warn and return false unless this client is the active GM. */
+  #requireAuthority() {
+    if (game.user.isActiveGM) return true;
+    ui.notifications.warn(game.i18n.localize("SARGAS_TRAPZORS.Notify.NeedActiveGM"));
+    return false;
+  }
+
+  /**
+   * Run a prompt action ("fire" | "test" | "ignore" | "disable") on a pending trap, exactly like the prompt buttons.
+   * @param {string} uuid
+   * @param {"fire"|"test"|"ignore"|"disable"} action
+   */
+  async runAction(uuid, action) {
+    if (!this.#requireAuthority()) return;
+    return this.#onAction(uuid, action);
+  }
+
+  /**
+   * Fire (or test-fire) a trap that is not pending. Test fire changes no state.
+   * @param {RegionBehavior} behavior
+   * @param {{token?:TokenDocument|null, test?:boolean}} [opts]
+   */
+  async manualFire(behavior, { token = null, test = false } = {}) {
+    if (!this.#requireAuthority()) return;
+    try {
+      const uuid = behavior.uuid;
+      const current = await fromUuid(uuid);
+      if (!current) return;
+      const entries = token ? [{ tokenUuid: token.uuid, movementId: null, userId: game.user.id, at: Date.now() }] : [];
+      if (await this.#blockedByValidation(current, entries, test)) return;
+      if (test) {
+        await this.#resolveFire(current, entries, true);
+        return;
+      }
+      const state = TriggerService.#stateOf(current);
+      const r = transition(state, { type: "fire", at: Date.now(), tokenUuids: entries.map((e) => e.tokenUuid) });
+      if (!r.ok) {
+        ui.notifications.warn(game.i18n.format("SARGAS_TRAPZORS.Notify.CannotFire", { reason: r.reason }));
+        return;
+      }
+      const fresh = await fromUuid(uuid);
+      if (!fresh) return;
+      if (fresh.system.status !== state.status || fresh.system.pending.length !== state.pending.length) {
+        ui.notifications.warn(game.i18n.localize("SARGAS_TRAPZORS.Notify.StateChanged"));
+        return;
+      }
+      await fresh.update({
+        "system.status": r.state.status,
+        "system.pending": r.state.pending,
+        "system.lastFired": r.state.lastFired
+      });
+      await this.#resolveFire(fresh, entries, false);
+    } catch (err) {
+      this.log.error("manual fire failed", err);
+    }
+  }
+
+  /** Reset a trap to armed: clears pending and detection checks. Closes its open prompt. */
+  async reset(behavior) {
+    if (!this.#requireAuthority()) return;
+    try {
+      const current = await fromUuid(behavior.uuid);
+      if (!current) return;
+      const r = transition(TriggerService.#stateOf(current), { type: "reset" });
+      await current.update({
+        "system.status": r.state.status,
+        "system.pending": r.state.pending,
+        "system.detection.checked": r.state.detection.checked
+      });
+      await this.prompts.get(behavior.uuid)?.close();
+    } catch (err) {
+      this.log.error("reset failed", err);
+    }
+  }
+
+  /** Enable or disable a trap. Disabling clears pending and closes its prompt. */
+  async setEnabled(behavior, on) {
+    if (!this.#requireAuthority()) return;
+    try {
+      const current = await fromUuid(behavior.uuid);
+      if (!current) return;
+      const r = transition(TriggerService.#stateOf(current), { type: on ? "enable" : "disable" });
+      const update = { disabled: r.state.disabled };
+      if (!on) {
+        update["system.status"] = r.state.status;
+        update["system.pending"] = r.state.pending;
+      }
+      await current.update(update);
+      if (!on) await this.prompts.get(behavior.uuid)?.close();
+    } catch (err) {
+      this.log.error("setEnabled failed", err);
+    }
+  }
+
+  /* ------------------------------------------------------------ */
 
   /** Reopen prompts for every trap still pending (ready, and when GM authority may have changed). */
   async recover() {

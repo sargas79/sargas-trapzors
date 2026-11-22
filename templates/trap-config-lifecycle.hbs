@@ -1,0 +1,52 @@
+<section class="tab {{tab.cssClass}}" data-tab="lifecycle" data-group="primary">
+  <div class="st-strip">
+    <span class="st-pill st-status-{{status.key}}"><i class="st-dot" inert></i>{{status.label}}</span>
+    <div class="st-strip-text">
+      <strong>{{status.label}}</strong>
+      <span class="st-muted">{{localize "SARGAS_TRAPZORS.Config.LastFired"}}: {{lastFired}}</span>
+    </div>
+    <div class="st-strip-actions">
+      <button type="button" data-action="resetTrap" {{#unless editable}}disabled{{/unless}}>
+        <i class="fa-solid fa-rotate-left" inert></i> {{localize "SARGAS_TRAPZORS.Config.Reset"}}
+      </button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="st-enabled">{{localize "SARGAS_TRAPZORS.Config.Enabled"}}</label>
+    <div class="form-fields"><input id="st-enabled" type="checkbox" name="enabled" {{#unless disabled}}checked{{/unless}}></div>
+  </div>
+  <div class="form-group">
+    <label for="st-reusable">{{localize "SARGAS_TRAPZORS.Config.Reusable"}}</label>
+    <div class="form-fields"><input id="st-reusable" type="checkbox" name="reusable" {{#if v.reusable}}checked{{/if}}></div>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Config.ReusableHint"}}</p>
+  </div>
+
+  <fieldset>
+    <legend>{{localize "SARGAS_TRAPZORS.Config.Trigger"}}</legend>
+    <div class="form-group">
+      <label>{{localize "SARGAS_TRAPZORS.Config.Dispositions"}}</label>
+      <div class="form-fields st-checks">
+        {{#each dispositions}}
+        <label class="checkbox"><input type="checkbox" name="trigger.dispositions" value="{{value}}" {{#if checked}}checked{{/if}}> {{label}}</label>
+        {{/each}}
+      </div>
+    </div>
+    <div class="form-group">
+      <label>{{localize "SARGAS_TRAPZORS.Config.ActorTypes"}}</label>
+      <div class="form-fields st-checks">
+        {{#each actorTypes}}
+        <label class="checkbox"><input type="checkbox" name="trigger.actorTypes" value="{{value}}" {{#if checked}}checked{{/if}}> {{label}}</label>
+        {{/each}}
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="st-hidden">{{localize "SARGAS_TRAPZORS.Config.IncludeHidden"}}</label>
+      <div class="form-fields"><input id="st-hidden" type="checkbox" name="trigger.includeHidden" {{#if v.trigger.includeHidden}}checked{{/if}}></div>
+    </div>
+    <div class="form-group">
+      <label for="st-gm-move">{{localize "SARGAS_TRAPZORS.Config.GMMovement"}}</label>
+      <div class="form-fields"><input id="st-gm-move" type="checkbox" name="trigger.gmMovementTriggers" {{#if v.trigger.gmMovementTriggers}}checked{{/if}}></div>
+    </div>
+  </fieldset>
+</section>
