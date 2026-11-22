@@ -75,4 +75,4 @@
 
 ### Known limitations
 
-See the [README](README.md#known-limitations) and its privacy section (trap data is readable by players, detection systems, wall blocking).
+See the [README](README.md#good-to-know) (trap data is readable by players, detection systems, wall blocking).
