@@ -72,6 +72,7 @@ Traps can play a video animation over their effect area when they fire. This is 
 ## Known limitations
 
 - **Detection works only in pf2e and sf2e.** In other systems it is unavailable.
+- **Hazard strikes need the GM on the trap's scene.** The strike is rolled on the active GM's client, which must be viewing the scene the trap is on; otherwise each target is skipped and the GM gets a notice.
 - **Blocked by walls** needs the effect region to have exactly one level, and is computed on the viewing GM's client.
 - Foundry splits a long drag into several movement segments; the module treats them as one movement (it dedupes on the root movement id). A token repositioned across a trap by a direct edit or teleport also counts as crossing it.
 - Verified on Foundry 14.370 only. sf2e (1.7) shares the pf2e adapter: its save request, damage card and hazard action were checked live, but the full multi-client pass ([docs/qa-checklist.md](docs/qa-checklist.md)) ran in pf2e only, and sf2e detection was not tested live.

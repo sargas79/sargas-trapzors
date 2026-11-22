@@ -108,7 +108,8 @@ export class Pf2eAdapter extends TrapAdapter {
    * card with Damage / Critical buttons. Damage is never applied automatically.
    * Options (pf2e 14.370 StrikeData variants[0].roll, pf2e.mjs ~20418): `target` (Token object), `event`.
    * The dialog is skipped through a synthetic event (eventToRollParams, pf2e.mjs ~13752: shiftKey flips the
-   * showCheckDialogs default); in test mode ctrlKey makes pf2e post with messageMode "gm" (GM-only whisper).
+   * showCheckDialogs default). Test mode rolls with `createMessage: false` and whispers a summary to GMs.
+   * pf2e needs a placed Token object as the target, so only tokens on the firing GM's viewed scene are rolled.
    */
   async #postHazardStrike({ actor, item, payload, test, affected, triggering }) {
     const notes = [];
