@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildDamageFormula, buildCheckSyntax, checkHazardLink } from "../scripts/core/pf2e-text.js";
+import { buildDamageFormula, buildCheckSyntax, checkHazardLink, strikeTargets } from "../scripts/core/pf2e-text.js";
 import { TrapAdapter } from "../scripts/adapters/adapter-api.js";
 
 test("buildDamageFormula", () => {
@@ -24,10 +24,24 @@ test("buildCheckSyntax", () => {
 });
 
 test("checkHazardLink", () => {
-  assert.deepEqual(checkHazardLink({ actorFound: false, itemFound: false }), { ok: false, reason: "missing-actor" });
-  assert.deepEqual(checkHazardLink({ actorFound: true, itemFound: false }), { ok: false, reason: "missing-item" });
-  assert.deepEqual(checkHazardLink({ actorFound: true, itemFound: true, itemType: "melee" }), { ok: false, reason: "not-an-action" });
-  assert.deepEqual(checkHazardLink({ actorFound: true, itemFound: true, itemType: "action" }), { ok: true, reason: null });
+  assert.deepEqual(checkHazardLink({ actorFound: false, itemFound: false }), { ok: false, reason: "missing-actor", kind: null });
+  assert.deepEqual(checkHazardLink({ actorFound: true, itemFound: false }), { ok: false, reason: "missing-item", kind: null });
+  assert.deepEqual(checkHazardLink({ actorFound: true, itemFound: true, itemType: "melee" }), { ok: true, reason: null, kind: "strike" });
+  assert.deepEqual(checkHazardLink({ actorFound: true, itemFound: true, itemType: "action" }), { ok: true, reason: null, kind: "action" });
+  assert.deepEqual(checkHazardLink({ actorFound: true, itemFound: true, itemType: "weapon" }), { ok: false, reason: "unsupported-item", kind: null });
+});
+
+test("strikeTargets", () => {
+  assert.deepEqual(strikeTargets({ affected: ["a", "b", "a"], triggering: ["t"] }), { ids: ["a", "b"], capped: false });
+  assert.deepEqual(strikeTargets({ affected: [], triggering: ["t", "t"] }), { ids: ["t"], capped: false });
+  assert.deepEqual(strikeTargets({ affected: ["a"], triggering: ["t"], mode: "triggering" }), { ids: ["t"], capped: false });
+  assert.deepEqual(strikeTargets({ mode: "triggering", affected: ["a"] }), { ids: [], capped: false });
+  const many = Array.from({ length: 12 }, (_, i) => `x${i}`);
+  const r = strikeTargets({ affected: many });
+  assert.equal(r.ids.length, 10);
+  assert.equal(r.capped, true);
+  assert.deepEqual(strikeTargets({ affected: many, max: 12 }).capped, false);
+  assert.deepEqual(strikeTargets(), { ids: [], capped: false });
 });
 
 test("base adapter validatePayload is ok", () => {

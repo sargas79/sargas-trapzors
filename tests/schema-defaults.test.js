@@ -42,6 +42,7 @@ test("migration fills missing fields without overwriting", () => {
   assert.deepEqual(data.trigger.dispositions, [1]);
   assert.equal(data.payload.roll.save.dc, 20);
   assert.equal(data.payload.roll.save.statistic, "reflex");
+  assert.equal(data.payload.hazard.strikeTargets, "affected");
   assert.deepEqual(data.detection.checked, []);
   assert.equal(data.effect.shape, "line");
 });

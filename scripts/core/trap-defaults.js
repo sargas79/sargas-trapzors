@@ -28,7 +28,7 @@ export function defaultTrapSystem() {
       flavor: "",
       soundPath: null,
       roll: { damage: "", damageType: "", save: { statistic: "reflex", dc: null, basic: true } },
-      hazard: { actorUuid: null, itemId: null }
+      hazard: { actorUuid: null, itemId: null, strikeTargets: "affected" }
     },
     detection: {
       enabled: false,

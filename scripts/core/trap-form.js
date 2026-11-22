@@ -1,6 +1,7 @@
 // Pure form <-> trap system mapping (no Foundry globals). Unit-tested in tests/trap-form.test.js.
 import { DISPOSITIONS } from "./constants.js";
 import { getPreset, ANIMATION_MODES } from "./animation-presets.js";
+import { STRIKE_TARGET_MODES } from "./pf2e-text.js";
 
 export const ALLOWED_DISPOSITIONS = Object.freeze([-2, -1, 0, 1]);
 export const ANCHORS = Object.freeze(["fixed", "token"]);
@@ -113,6 +114,8 @@ export function formToTrapUpdate(formData, ctx = {}) {
   const actorUuid = nullableString(hazard.actorUuid);
   const itemId = nullableString(hazard.itemId);
   if (kind === "roll" && !damage) err("payload.roll.damage", "DamageRequired");
+  const strikeTargets = isBlank(hazard.strikeTargets) ? "affected" : asString(hazard.strikeTargets).trim();
+  if (!STRIKE_TARGET_MODES.includes(strikeTargets)) err("payload.hazard.strikeTargets", "StrikeTargets");
   if (kind === "hazard") {
     if (!actorUuid) err("payload.hazard.actorUuid", "HazardActorRequired");
     if (!itemId) err("payload.hazard.itemId", "HazardItemRequired");
@@ -174,6 +177,7 @@ export function formToTrapUpdate(formData, ctx = {}) {
     "system.payload.roll.save.basic": bool(save.basic),
     "system.payload.hazard.actorUuid": actorUuid,
     "system.payload.hazard.itemId": itemId,
+    "system.payload.hazard.strikeTargets": strikeTargets,
     "system.detection.enabled": detEnabled,
     "system.detection.dcSource": dcSource,
     "system.detection.dc": detDc,

@@ -68,10 +68,25 @@
       <div class="form-fields">
         <select id="st-hazard-item" name="payload.hazard.itemId">
           <option value="">{{localize "SARGAS_TRAPZORS.Config.Choose"}}</option>
-          {{#each hazard.items}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          {{#each hazard.itemGroups}}
+          <optgroup label="{{label}}">
+            {{#each items}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </optgroup>
+          {{/each}}
         </select>
       </div>
     </div>
+    {{#if hazard.isStrike}}
+    <div class="form-group">
+      <label for="st-strike-targets">{{localize "SARGAS_TRAPZORS.Config.StrikeTargets"}}</label>
+      <div class="form-fields">
+        <select id="st-strike-targets" name="payload.hazard.strikeTargets">
+          {{#each hazard.strikeTargets}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </div>
+      <p class="hint">{{localize "SARGAS_TRAPZORS.Config.StrikeTargetsHint"}}</p>
+    </div>
+    {{/if}}
     {{#if hazard.summary}}<p class="st-muted st-hazard-summary">{{hazard.summary}}</p>{{/if}}
     <div class="form-group">
       <label>{{localize "SARGAS_TRAPZORS.Hazard.ConfigureLabel"}}</label>

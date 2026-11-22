@@ -316,10 +316,14 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     if (actorUuid && !list.some((o) => o.value === actorUuid)) {
       list.push({ value: actorUuid, label: actorOk ? actor.name : actorUuid });
     }
-    const items = actorOk
-      ? actor.items.filter((i) => i.type === "action").map((i) => ({ value: i.id, label: i.name }))
+    const mk = (type) => actorOk
+      ? actor.items.filter((i) => i.type === type).map((i) => ({ value: i.id, label: i.name }))
       : [];
-    const itemOk = !itemId || items.some((i) => i.value === itemId);
+    const actionItems = mk("action");
+    const strikeItems = mk("melee");
+    const itemOk = !itemId || [...actionItems, ...strikeItems].some((i) => i.value === itemId);
+    const isStrike = strikeItems.some((i) => i.value === itemId);
+    const strikeTargets = v.payload.hazard.strikeTargets || "affected";
     let note = null;
     if (actorUuid && !actorOk) note = L("SARGAS_TRAPZORS.Config.HazardBrokenActor");
     else if (itemId && !itemOk) note = L("SARGAS_TRAPZORS.Config.HazardBrokenItem");
@@ -341,7 +345,15 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     }
     return {
       actors: toOptions(list, actorUuid),
-      items: toOptions(items, itemId),
+      itemGroups: [
+        { label: L("SARGAS_TRAPZORS.Config.HazardGroupActions"), items: toOptions(actionItems, itemId) },
+        { label: L("SARGAS_TRAPZORS.Config.HazardGroupStrikes"), items: toOptions(strikeItems, itemId) }
+      ].filter((g) => g.items.length),
+      isStrike,
+      strikeTargets: toOptions(
+        ["affected", "triggering"].map((m) => ({ value: m, label: L(`SARGAS_TRAPZORS.Config.StrikeTarget.${m}`) })),
+        strikeTargets
+      ),
       summary,
       hasActor: actorOk,
       broken: !!note,
@@ -369,7 +381,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     this.element.addEventListener("change", (event) => {
       this.#dirty = true;
       const name = event.target?.name;
-      if (["payload.kind", "payload.hazard.actorUuid", "effect.anchor", "effect.animation.preset"].includes(name)) this.render();
+      if (["payload.kind", "payload.hazard.actorUuid", "payload.hazard.itemId", "effect.anchor", "effect.animation.preset"].includes(name)) this.render();
     });
     const rerender = debounce(() => { if (this.rendered) this.render(); }, 100);
     const sceneId = this.document.parent?.parent?.id;
