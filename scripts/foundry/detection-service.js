@@ -4,6 +4,7 @@ import { MODULE_ID } from "../core/constants.js";
 import { createDeduper } from "../core/dedupe.js";
 import { resolveDetectionDC } from "../core/detection.js";
 import { buildDetectionShape, unitsToPixels } from "../core/geometry.js";
+import { removeLinkedRegion } from "./linked-regions.js";
 import { getAdapter } from "./payload-service.js";
 import { postDetectionResult, postDetectionNote } from "./chat.js";
 
@@ -102,6 +103,7 @@ export async function createDetectionArea(trap, { radiusFt = 10 } = {}) {
   trap = typeof trap === "string" ? fromUuidSync(trap) : trap;
   const scene = trap.scene;
   const trigger = trap.region;
+  await removeLinkedRegion(trap, "detection"); // no orphan from a previous area
   const grid = scene.grid;
   const shape = buildDetectionShape(
     trigger.toObject().shapes, trigger.bounds, unitsToPixels(radiusFt, grid), grid.type !== 0

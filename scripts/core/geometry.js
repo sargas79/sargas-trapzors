@@ -90,3 +90,35 @@ export function buildDetectionShape(triggerShapes, bounds, radiusPx, gridBased) 
     : { type: "rectangle", x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
   return { type: "emanation", base, radius: radiusPx, gridBased: !!gridBased };
 }
+
+/**
+ * Translate a plain shape-data object by (dx, dy) pixels. Returns a new object.
+ * Grid shapes shift by whole cells: i (row) by round(dy/gridSize), j (column) by round(dx/gridSize).
+ * Emanation translates its base recursively. Unknown types are returned unchanged (cloned).
+ */
+export function translateShape(shape, dx, dy, gridSize) {
+  const out = structuredClone(shape);
+  switch (shape?.type) {
+    case "rectangle": case "circle": case "ellipse": case "cone": case "line": case "ring": case "token":
+      out.x += dx;
+      out.y += dy;
+      break;
+    case "polygon":
+      out.points = shape.points.map((v, n) => v + (n % 2 === 0 ? dx : dy));
+      if (out.origin) { out.origin.x += dx; out.origin.y += dy; }
+      break;
+    case "emanation":
+      out.base = translateShape(shape.base, dx, dy, gridSize);
+      break;
+    case "grid": {
+      const di = Math.round(dy / gridSize);
+      const dj = Math.round(dx / gridSize);
+      out.offsets = shape.offsets.map((o) => ({ ...o, i: o.i + di, j: o.j + dj }));
+      if (out.origin) { out.origin.x += dx; out.origin.y += dy; }
+      break;
+    }
+    default:
+      break;
+  }
+  return out;
+}

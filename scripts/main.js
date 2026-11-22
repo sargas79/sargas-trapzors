@@ -6,6 +6,7 @@ import * as effectArea from "./foundry/effect-area.js";
 import DetectionBehaviorType from "./foundry/detection-behavior.js";
 import { createDetectionService, createDetectionArea, reveal } from "./foundry/detection-service.js";
 import { registerChatHooks } from "./foundry/chat.js";
+import { getLinkStatus, repairLinks, deleteTrap, duplicateTrap, registerLinkedRegionHooks, cleanupOrphans } from "./foundry/linked-regions.js";
 import { createTriggerService } from "./foundry/trigger-service.js";
 
 const log = createLogger({
@@ -31,7 +32,11 @@ Hooks.once("init", () => {
     createEffectArea: effectArea.createEffectArea,
     setBlockedByWalls: effectArea.setBlockedByWalls,
     previewEffect: effectArea.previewEffect,
-    resolveAffectedTokens: effectArea.resolveAffectedTokens
+    resolveAffectedTokens: effectArea.resolveAffectedTokens,
+    getLinkStatus,
+    repairLinks,
+    deleteTrap,
+    duplicateTrap
   };
 
   game.settings.register(MODULE_ID, "debug", {
@@ -48,6 +53,8 @@ Hooks.once("ready", () => {
   // game.user is unavailable during init, so GM-gated logging must happen here.
   log.info("ready", { version: game.modules.get(MODULE_ID)?.version });
   effectArea.cleanupReveals().catch((err) => log.error("reveal cleanup failed", err));
+  registerLinkedRegionHooks({ log });
+  cleanupOrphans({ log }).catch((err) => log.error("orphan cleanup failed", err));
   createDetectionService({ log });
   registerChatHooks({ onReveal: (uuid) => reveal(uuid) });
   const service = createTriggerService({ log });

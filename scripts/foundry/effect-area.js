@@ -1,6 +1,7 @@
 // Foundry-dependent. Never import from tests.
 // Effect areas are linked GM-only Regions (plan section 8). All writes are GM-only.
 import { MODULE_ID } from "../core/constants.js";
+import { removeLinkedRegion } from "./linked-regions.js";
 import { defaultEffectShape, anchorShapeToToken, rectsOverlap } from "../core/geometry.js";
 
 const VIS = () => CONST.REGION_VISIBILITY ?? { GAMEMASTER: 1, ALWAYS: 2 };
@@ -67,6 +68,7 @@ export async function createEffectArea(behavior, { kind = "line", anchor = "fixe
   behavior = asBehavior(behavior);
   const scene = behavior.scene;
   const trigger = behavior.region;
+  await removeLinkedRegion(behavior, "effect"); // no orphan from a previous area
   const b = trigger.bounds;
   const at = origin ?? { x: b.x + b.width / 2, y: b.y + b.height / 2 };
   const shape = defaultEffectShape(kind, at, gridOf(scene));
