@@ -91,12 +91,23 @@ When Sargas Visual Automation (0.6.3 tested for the API) is active, trap animati
 
 On the Detection tab, **Glow when revealed** plays a JB2A Patreon effect once over the trigger area, for everyone, when the trap is revealed (the **Reveal** chat button or **Reveal now**; not when it was already revealed). Choose a Detect Magic circle (blue, green, purple, yellow, dark red) or a divination rune pulse. **None** is the default and changes nothing. **Preview glow** plays it for you only. It plays through Visual Automation when that is in use.
 
+## Victory Counter challenges
+
+Optional, and active only while [Victory Counter](https://github.com/sargas79/sargas-victory-counter) is active (module id `sargas-victory-counter` or `victory-counter`; the first active one is used). It works in any system. With Victory Counter off, nothing changes and the **Challenge** tab is hidden.
+
+- **Triggers (track fires trap).** The trap sheet's **Challenge** tab holds up to 3 triggers. Each names a track and a condition: **reaches** a value (progress and step tracks, going up), **lands on a step** (step tracks), **enters a band** (threshold tracks, in either direction) or **completes**. The action is **Ask the GM** (default: a whispered chat card with **Fire at the party** and **Ignore**) or **Fire at once**. Firing goes through **Fire at…** at the party's members, or at player-owned characters when there is no party, so no tokens are needed.
+- **Once per crossing.** A trigger watches for the moment its condition becomes true, so it re-arms by itself. **Reaches 3** fires again only after the track has dropped below 3 and risen to it again; a step or band fires again after the track has left it and come back; **completes** after the track is no longer complete. A trap that is disabled, spent or in a hazard encounter is never fired or asked about.
+- **Effects (trap moves track).** For **Fired**, **Noticed** (a successful detection check; applied once per character who notices the trap) and **Disabled** (End hazard, or **Mark disabled** in the Trap Manager row menu) the trap adjusts a chosen track by a whole number, positive or negative, and the GMs get a whispered note. **Mark disabled** only applies the effect; it does not change the trap's state. **Fire as test** adjusts nothing.
+- **Broken links.** If a linked track is deleted, the sheet shows a note, the Trap Manager's **Challenge** pill turns red, and the trigger never fires.
+- The Trap Manager shows a **Challenge** pill on traps with any trigger or effect.
+
 ## Privacy and limits
 
 **Hiding a trap is a UI matter, not a security boundary.** Foundry sends region and region-behavior data to every connected client, including regions set to GM-only. A player can read trap configuration from the browser console: save DCs, damage formulas, linked hazard actors, detection DCs and which tokens have been checked. Hazard actors the player has no ownership of are also sent to their client. This was verified in spike S1 (see [docs/spikes.md](docs/spikes.md)). **Do not put secrets in trap data.** The module does not encode or obscure it.
 
 ## Known limitations
 
+- **Victory Counter challenges** need the active GM online: the GM's client watches the tracks and applies every effect. Victory Counter fires no hooks, so the module diffs the tracks setting each time it changes. A track that was created or changed while no GM was connected is not diffed. Not yet tested live.
 - **Detection works only in pf2e and sf2e.** In other systems it is unavailable.
 - **Hazard strikes need the GM on the trap's scene for map targets.** A strike against a token is rolled on the active GM's client, which must be viewing that token's scene. Characters with no token (Fire at…) are rolled without a target, so the public attack card shows no degree; only the GM's whispered line does. Routine-card strikes against tokens on other scenes are rolled the same way.
 - **Theater of the mind** (Fire at… and Detection check…) needs the active GM. Not yet tested live: sf2e, and firing a trap that is stored on another scene when it has an effect area or an encounter (the map effect area is skipped; an encounter only adds tokens on the trap's scene).

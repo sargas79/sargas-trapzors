@@ -12,6 +12,8 @@ import { rearmRemaining, formatDuration } from "../core/hazard-info.js";
 import { L, statusInfo, trapName, debounce, relativeTime, firstControlledToken } from "./ui-helpers.js";
 import { createTrapFromHazard } from "./scene-controls.js";
 import { FireAtDialog } from "./fire-at-dialog.js";
+import { vcModule, getTracks, markTrapDisabled } from "../foundry/victory-counter.js";
+import { hasChallenge, hasEffect, challengeBroken } from "../core/challenges.js";
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 const HOOKS = ["createRegion", "updateRegion", "deleteRegion", "createRegionBehavior", "updateRegionBehavior",
@@ -126,6 +128,7 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
       delete: this.#act("delete"),
       disableChecks: this.#act("disableChecks"),
       endHazard: this.#act("endHazard"),
+      markDisabled: this.#act("markDisabled"),
       toggleMenu: this.#onToggleMenu,
       refreshIndex: this.#onRefreshIndex,
       showMore: this.#onShowMore,
@@ -185,6 +188,8 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
     this.#menuUuid = null; // a re-render replaces the DOM, so any open popover menu is gone
     const token = firstControlledToken();
     const allScenes = this.#scope === "all";
+    const vcActive = !!vcModule();
+    const tracks = vcActive ? getTracks() : [];
     const rows = this.#traps().map((b) => {
       const links = getLinkStatus(b);
       const broken = [links.effect, links.detection].some((s) => s === "missing" || s === "foreign");
@@ -202,6 +207,9 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
         disabled: !!b.disabled,
         revealed: !!b.system.revealed,
         inEncounter: !!b.system.encounter?.tokenId,
+        challenge: vcActive && hasChallenge(b.system.challenge),
+        challengeBroken: vcActive && challengeBroken(b.system.challenge, tracks),
+        canMarkDisabled: vcActive && hasEffect(b.system.challenge, "disabled"),
         canDetect: !!getAdapter().capabilities.detection,
         isHazard: b.system.payload.kind === "hazard" && !!b.system.payload.hazard.actorUuid,
         pending: status.key === "pending" && !b.disabled,
@@ -463,6 +471,7 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
         return postDisableChecks({ trapName: trapName(b), html, actor });
       }
       case "endHazard": return endHazard(b, { log: service?.log });
+      case "markDisabled": return markTrapDisabled(b, { log: service?.log });
       case "duplicate": return duplicateTrap(b);
       case "delete": return deleteTrap(b);
       case "pan": {

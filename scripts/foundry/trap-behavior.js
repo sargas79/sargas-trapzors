@@ -4,6 +4,7 @@ import { ENCOUNTER_ADD_MODES } from "../core/encounter.js";
 import { makeTriggerKey } from "../core/dedupe.js";
 import { evaluateEligibility } from "../core/eligibility.js";
 import { canTrigger } from "../core/trap-state.js";
+import { MAX_TRIGGERS, WHENS, ACTIONS } from "../core/challenges.js";
 import { rootMovementId } from "../core/movement.js";
 import { decideMoverAction, decideAuthorityAction } from "../core/trigger-decisions.js";
 import { hasActiveGM, isAuthority, validateTokenInRegion } from "./authority.js";
@@ -109,6 +110,20 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         minRank: new fields.NumberField({ required: true, nullable: false, integer: true, min: 0, initial: 0 }),
         revealGlow: nullableStr(),
         checked: new fields.ArrayField(str(), { required: true, initial: () => [] })
+      }),
+      challenge: new fields.SchemaField({
+        triggers: new fields.ArrayField(new fields.SchemaField({
+          trackId: nullableStr(),
+          when: str({ choices: [...WHENS], initial: "reaches" }),
+          value: new fields.NumberField({ required: true, nullable: true, integer: true, initial: null }),
+          stepId: nullableStr(),
+          bandId: nullableStr(),
+          action: str({ choices: [...ACTIONS], initial: "ask" })
+        }), { required: true, initial: () => [], max: MAX_TRIGGERS }),
+        effects: new fields.SchemaField(Object.fromEntries(["fired", "noticed", "disabled"].map((k) => [k, new fields.SchemaField({
+          trackId: nullableStr(),
+          delta: new fields.NumberField({ required: true, nullable: false, integer: true, initial: 0 })
+        })])))
       })
     };
   }

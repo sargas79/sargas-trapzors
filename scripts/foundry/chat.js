@@ -82,11 +82,11 @@ export async function postDetectionNote(text) {
 /**
  * Wire chat buttons. Call once from ready. One delegated listener on the document, so buttons on messages
  * rendered before `ready` (the chat history after a reload) and in popped-out messages work too. GM only.
- * @param {{onReveal:(trapUuid:string)=>Promise<void>}} handlers
+ * @param {{onReveal:(trapUuid:string)=>Promise<void>, onChallenge?:(dataset:DOMStringMap, messageId:string|undefined)=>Promise<void>}} handlers
  */
-export function registerChatHooks({ onReveal } = {}) {
+export function registerChatHooks({ onReveal, onChallenge } = {}) {
   document.addEventListener("click", async (ev) => {
-    const btn = ev.target?.closest?.('[data-action="sargas-trapzors-select"], [data-action="sargas-trapzors-reveal"]');
+    const btn = ev.target?.closest?.('[data-action="sargas-trapzors-select"], [data-action="sargas-trapzors-reveal"], [data-action="sargas-trapzors-challenge"]');
     if (!btn || !btn.closest(".chat-message")) return;
     ev.preventDefault();
     if (!game.user?.isGM) return;
@@ -96,6 +96,12 @@ export function registerChatHooks({ onReveal } = {}) {
     }
     if (btn.disabled) return;
     btn.disabled = true;
+    if (btn.dataset.action === "sargas-trapzors-challenge") {
+      try { await onChallenge?.(btn.dataset, btn.closest(".chat-message")?.dataset.messageId); }
+      catch (err) { ui.notifications.error(String(err?.message ?? err)); }
+      finally { if (btn.isConnected) btn.disabled = false; }
+      return;
+    }
     try { await onReveal?.(btn.dataset.trapUuid); }
     catch (err) { btn.disabled = false; ui.notifications.error(String(err?.message ?? err)); }
   });

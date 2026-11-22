@@ -14,6 +14,7 @@ import { configureTrapFromHazard, importHazard } from "./foundry/hazard-traps.js
 import { registerEncounterHooks } from "./foundry/hazard-encounter.js";
 import { registerAnimationSocket, registerAnimationHooks } from "./foundry/animations.js";
 import { debounce } from "./apps/ui-helpers.js";
+import { registerVictoryCounterHooks, onChallengeButton } from "./foundry/victory-counter.js";
 
 const log = createLogger({
   prefix: MODULE_ID,
@@ -89,7 +90,8 @@ Hooks.once("ready", () => {
   cleanupOrphans({ log }).catch((err) => log.error("orphan cleanup failed", err));
   createDetectionService({ log });
   registerEncounterHooks({ log });
-  registerChatHooks({ onReveal: (uuid) => reveal(uuid) });
+  registerChatHooks({ onReveal: (uuid) => reveal(uuid), onChallenge: onChallengeButton });
+  registerVictoryCounterHooks({ log });
   const service = createTriggerService({ log });
   service.recover().catch((err) => log.error("recovery failed", err));
   // Re-arm timers run on game time: check now, and whenever the world clock moves (debounced).

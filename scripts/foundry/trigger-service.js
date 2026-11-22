@@ -12,6 +12,7 @@ import { endTrapAnimation, syncHazardAnimationSuppression } from "./animations.j
 import { runPayload, validateFirePayload } from "./payload-service.js";
 import { postGMSummary, postDetectionNote } from "./chat.js";
 import { startEncounter, previewEncounter, clearEncounter } from "./hazard-encounter.js";
+import { applyChallengeEffect } from "./victory-counter.js";
 
 let instance = null;
 
@@ -165,6 +166,8 @@ class TriggerService {
       if (test) await previewEncounter(behavior, { triggering, affected, log: this.log });
       else notes.push(...(await startEncounter(behavior, { triggering, affected, log: this.log })).notes);
     }
+    // Challenge effect: a real fire only (a test fire adjusts nothing).
+    if (!test) await applyChallengeEffect(behavior, "fired", { log: this.log });
     try {
       await postGMSummary({ trapName, triggering, affected, dc, notes, test });
     } catch (err) {
