@@ -1,5 +1,6 @@
 // Pure form <-> trap system mapping (no Foundry globals). Unit-tested in tests/trap-form.test.js.
 import { DISPOSITIONS } from "./constants.js";
+import { getPreset, ANIMATION_MODES } from "./animation-presets.js";
 
 export const ALLOWED_DISPOSITIONS = Object.freeze([-2, -1, 0, 1]);
 export const ANCHORS = Object.freeze(["fixed", "token"]);
@@ -7,6 +8,16 @@ export const SHAPES = Object.freeze(["line", "cone", "emanation"]);
 export const KINDS = Object.freeze(["none", "roll", "hazard"]);
 export const DC_SOURCES = Object.freeze(["manual", "hazard"]);
 export const SAVE_STATS = Object.freeze(["fortitude", "reflex", "will"]);
+export const REARM_UNITS = Object.freeze({ seconds: 1, minutes: 60, hours: 3600, days: 86400 });
+
+/** Split stored re-arm seconds into the largest unit that divides evenly. @returns {{value:number|"", unit:string}} */
+export function splitRearm(seconds) {
+  if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) return { value: "", unit: "minutes" };
+  for (const unit of ["days", "hours", "minutes"]) {
+    if (seconds % REARM_UNITS[unit] === 0) return { value: seconds / REARM_UNITS[unit], unit };
+  }
+  return { value: seconds, unit: "seconds" };
+}
 
 const K = "SARGAS_TRAPZORS.Form.Error.";
 const DISPOSITION_NAMES = Object.freeze({
@@ -64,6 +75,7 @@ export function formToTrapUpdate(formData, ctx = {}) {
   const hazard = payload.hazard ?? {};
   const trigger = f.trigger ?? {};
   const detection = f.detection ?? {};
+  const rearm = f.rearm ?? {};
   const errors = [];
   const err = (field, key) => errors.push({ field, key: `${K}${key}` });
   const allowedKinds = ctx.allowedKinds ?? KINDS;
@@ -75,6 +87,17 @@ export function formToTrapUpdate(formData, ctx = {}) {
   if (!SHAPES.includes(shape)) err("effect.shape", "Shape");
   const revealSeconds = parseNumber(effect.revealSeconds);
   if (revealSeconds === null || revealSeconds < 0) err("effect.revealSeconds", "RevealSeconds");
+  // Animation: "custom" is the sheet's marker for a custom file; blank and custom both store no preset.
+  const anim = effect.animation ?? {};
+  const rawPreset = asString(anim.preset).trim();
+  let animPreset = null;
+  if (rawPreset !== "" && rawPreset !== "custom") {
+    if (getPreset(rawPreset)) animPreset = rawPreset;
+    else err("effect.animation.preset", "AnimationPreset");
+  }
+  const animMode = isBlank(anim.mode) ? "area" : asString(anim.mode).trim();
+  if (!ANIMATION_MODES.includes(animMode)) err("effect.animation.mode", "AnimationMode");
+  const animFile = rawPreset === "custom" ? nullableString(anim.file) : null;
 
   // Payload
   const kind = asString(payload.kind);
@@ -117,10 +140,20 @@ export function formToTrapUpdate(formData, ctx = {}) {
   const minRank = parseInteger(detection.minRank);
   if (minRank === null || minRank < 0 || minRank > 4) err("detection.minRank", "MinRank");
 
+  // Re-arm timer (game time); blank means never.
+  let rearmSeconds = null;
+  if (!isBlank(rearm.value)) {
+    const n = parseNumber(rearm.value);
+    const unit = asString(rearm.unit || "seconds");
+    if (n === null || n <= 0 || !Object.hasOwn(REARM_UNITS, unit)) err("rearm.value", "Rearm");
+    else rearmSeconds = Math.round(n * REARM_UNITS[unit]);
+  }
+
   if (errors.length) return { ok: false, errors };
 
   const update = {
     "system.reusable": bool(f.reusable),
+    "system.rearmSeconds": rearmSeconds,
     "system.trigger.dispositions": dispositions,
     "system.trigger.actorTypes": types.length ? types : null,
     "system.trigger.includeHidden": bool(trigger.includeHidden),
@@ -128,6 +161,9 @@ export function formToTrapUpdate(formData, ctx = {}) {
     "system.effect.anchor": anchor,
     "system.effect.shape": shape,
     "system.effect.revealSeconds": revealSeconds,
+    "system.effect.animation.preset": animPreset,
+    "system.effect.animation.file": animFile,
+    "system.effect.animation.mode": animMode,
     "system.payload.kind": kind,
     "system.payload.flavor": asString(payload.flavor),
     "system.payload.soundPath": nullableString(payload.soundPath),

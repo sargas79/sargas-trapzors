@@ -1,0 +1,33 @@
+<section class="tab {{tab.cssClass}}" data-tab="compendium" data-group="primary">
+  {{#unless browse}}
+  <p class="notification info st-notice">{{localize "SARGAS_TRAPZORS.Browser.Unsupported"}}</p>
+  {{else}}
+  <div class="st-manager">
+    <div class="st-filterbar">
+      <div class="st-segmented" role="radiogroup" aria-label="{{localize "SARGAS_TRAPZORS.Browser.Kind.label"}}">
+        {{#each kinds}}<label><input type="radio" name="kind" data-cfilter value="{{value}}" {{#if selected}}checked{{/if}}><span>{{label}}</span></label>{{/each}}
+      </div>
+      <input type="search" name="query" data-cfilter value="{{filters.query}}" placeholder="{{localize "SARGAS_TRAPZORS.Browser.Search"}}" aria-label="{{localize "SARGAS_TRAPZORS.Browser.Search"}}">
+      <label class="st-inline">{{localize "SARGAS_TRAPZORS.Browser.Level"}}
+        <input type="number" name="levelMin" data-cfilter value="{{filters.levelMin}}" min="-1" max="30" step="1" placeholder="{{localize "SARGAS_TRAPZORS.Browser.Min"}}" aria-label="{{localize "SARGAS_TRAPZORS.Browser.LevelMin"}}">
+        <span aria-hidden="true">&ndash;</span>
+        <input type="number" name="levelMax" data-cfilter value="{{filters.levelMax}}" min="-1" max="30" step="1" placeholder="{{localize "SARGAS_TRAPZORS.Browser.Max"}}" aria-label="{{localize "SARGAS_TRAPZORS.Browser.LevelMax"}}">
+      </label>
+      <select name="complexity" data-cfilter aria-label="{{localize "SARGAS_TRAPZORS.Browser.Complexity.label"}}">
+        {{#each complexities}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+      <select name="pack" data-cfilter aria-label="{{localize "SARGAS_TRAPZORS.Browser.Pack"}}">
+        <option value="all">{{localize "SARGAS_TRAPZORS.Browser.AllPacks"}}</option>
+        {{#each packs}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+      <button type="button" class="icon fa-solid fa-rotate" data-action="refreshIndex" data-tooltip="SARGAS_TRAPZORS.Browser.Refresh" aria-label="{{localize "SARGAS_TRAPZORS.Browser.Refresh"}}"></button>
+    </div>
+    {{#if loading}}
+    <p class="st-empty st-muted"><i class="fa-solid fa-spinner fa-spin" inert></i> {{localize "SARGAS_TRAPZORS.Browser.Loading"}}</p>
+    {{else}}{{#if error}}
+    <p class="st-warning"><i class="fa-solid fa-triangle-exclamation" inert></i> {{error}}</p>
+    {{/if}}{{/if}}
+    <div class="st-results" {{#if loading}}hidden{{/if}}></div>
+  </div>
+  {{/unless}}
+</section>

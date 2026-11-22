@@ -43,6 +43,41 @@
     </div>
   </div>
   <div class="form-group">
+    <label for="st-anim">{{localize "SARGAS_TRAPZORS.Animation.label"}}</label>
+    <div class="form-fields">
+      <select id="st-anim" name="effect.animation.preset">
+        {{#each animation.options}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        {{#each animation.groups}}
+        <optgroup label="{{label}}">
+          {{#each options}}<option value="{{value}}" {{#if selected}}selected{{/if}} {{#if disabled}}disabled{{/if}}>{{label}}</option>{{/each}}
+        </optgroup>
+        {{/each}}
+        <option value="custom" {{#if animation.isCustom}}selected{{/if}}>{{localize "SARGAS_TRAPZORS.Animation.Custom"}}</option>
+      </select>
+      <button type="button" data-action="previewAnimation">
+        <i class="fa-solid fa-film" inert></i> {{localize "SARGAS_TRAPZORS.Animation.Preview"}}
+      </button>
+    </div>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Animation.Hint"}}{{#unless animation.hasJb2a}} <span class="st-muted">{{localize "SARGAS_TRAPZORS.Animation.NoJb2a"}}</span>{{/unless}}</p>
+  </div>
+  {{#if animation.isCustom}}
+  <div class="form-group">
+    <label for="st-anim-file">{{localize "SARGAS_TRAPZORS.Animation.File"}}</label>
+    <div class="form-fields">
+      <input id="st-anim-file" type="text" name="effect.animation.file" value="{{animation.file}}">
+      <button type="button" class="icon fa-solid fa-file-video" data-action="browseAnimation" data-tooltip="SARGAS_TRAPZORS.Animation.Browse" aria-label="{{localize "SARGAS_TRAPZORS.Animation.Browse"}}"></button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="st-anim-mode">{{localize "SARGAS_TRAPZORS.Animation.Mode.label"}}</label>
+    <div class="form-fields">
+      <select id="st-anim-mode" name="effect.animation.mode">
+        {{#each animation.modes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+    </div>
+  </div>
+  {{/if}}
+  <div class="form-group">
     <label for="st-walls">{{localize "SARGAS_TRAPZORS.Config.BlockedByWalls"}}</label>
     <div class="form-fields">
       <input id="st-walls" type="checkbox" name="effect.blockedByWalls" {{#if v.effect.blockedByWalls}}checked{{/if}}>

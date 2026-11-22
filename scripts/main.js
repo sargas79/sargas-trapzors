@@ -10,6 +10,9 @@ import { getLinkStatus, repairLinks, deleteTrap, duplicateTrap, registerLinkedRe
 import { TrapConfig } from "./apps/trap-config.js";
 import { registerSceneControls, createTrapFromRegion, openTrapManager } from "./apps/scene-controls.js";
 import { createTriggerService } from "./foundry/trigger-service.js";
+import { configureTrapFromHazard, importHazard } from "./foundry/hazard-traps.js";
+import { registerAnimationSocket } from "./foundry/animations.js";
+import { debounce } from "./apps/ui-helpers.js";
 
 const log = createLogger({
   prefix: MODULE_ID,
@@ -47,7 +50,9 @@ Hooks.once("init", () => {
     deleteTrap,
     duplicateTrap,
     createTrapFromRegion,
-    openTrapManager
+    openTrapManager,
+    configureTrapFromHazard,
+    importHazard
   };
 
   game.settings.register(MODULE_ID, "debug", {
@@ -64,14 +69,19 @@ Hooks.once("ready", () => {
   // game.user is unavailable during init, so GM-gated logging must happen here.
   log.info("ready", { version: game.modules.get(MODULE_ID)?.version });
   effectArea.cleanupReveals().catch((err) => log.error("reveal cleanup failed", err));
+  registerAnimationSocket();
   registerLinkedRegionHooks({ log });
   cleanupOrphans({ log }).catch((err) => log.error("orphan cleanup failed", err));
   createDetectionService({ log });
   registerChatHooks({ onReveal: (uuid) => reveal(uuid) });
   const service = createTriggerService({ log });
   service.recover().catch((err) => log.error("recovery failed", err));
+  // Re-arm timers run on game time: check now, and whenever the world clock moves (debounced).
+  service.checkRearms();
+  Hooks.on("updateWorldTime", debounce(() => service.checkRearms(), 500));
   // Fires on connect and disconnect: authority may have moved to (or away from) this client.
   Hooks.on("userConnected", () => {
     service.recover().catch((err) => log.error("recovery failed", err));
+    service.checkRearms();
   });
 });

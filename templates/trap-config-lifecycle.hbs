@@ -21,6 +21,16 @@
     <div class="form-fields"><input id="st-reusable" type="checkbox" name="reusable" {{#if v.reusable}}checked{{/if}}></div>
     <p class="hint">{{localize "SARGAS_TRAPZORS.Config.ReusableHint"}}</p>
   </div>
+  <div class="form-group">
+    <label for="st-rearm">{{localize "SARGAS_TRAPZORS.Config.Rearm"}}</label>
+    <div class="form-fields">
+      <input id="st-rearm" type="number" name="rearm.value" value="{{v.rearm.value}}" min="0" step="any" placeholder="{{localize "SARGAS_TRAPZORS.Config.RearmNever"}}">
+      <select name="rearm.unit" aria-label="{{localize "SARGAS_TRAPZORS.Config.RearmUnit.label"}}">
+        {{#each rearmUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+    </div>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Config.RearmHint"}}{{#if rearmIn}} <strong>{{rearmIn}}</strong>{{/if}}</p>
+  </div>
 
   <fieldset>
     <legend>{{localize "SARGAS_TRAPZORS.Config.Trigger"}}</legend>

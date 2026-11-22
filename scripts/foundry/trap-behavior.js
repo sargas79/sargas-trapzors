@@ -44,9 +44,11 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         userId: str(),
         at: new fields.NumberField({ required: true, nullable: false, initial: 0 })
       }), { required: true, initial: () => [] }),
+      rearmSeconds: new fields.NumberField({ required: true, nullable: true, integer: true, min: 0, initial: null }),
       lastFired: new fields.SchemaField({
         at: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
-        tokenUuids: new fields.ArrayField(str(), { required: true, initial: () => [] })
+        tokenUuids: new fields.ArrayField(str(), { required: true, initial: () => [] }),
+        worldTime: new fields.NumberField({ required: true, nullable: true, initial: null })
       }, { required: true, nullable: true, initial: null }),
       trigger: new fields.SchemaField({
         dispositions: new fields.ArrayField(
@@ -62,7 +64,12 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         anchor: str({ choices: ["fixed", "token"], initial: "fixed" }),
         shape: str({ choices: ["line", "cone", "emanation"], initial: "line" }),
         revealSeconds: new fields.NumberField({ required: true, nullable: false, min: 0, initial: 6 }),
-        blockedByWalls: bool(false)
+        blockedByWalls: bool(false),
+        animation: new fields.SchemaField({
+          preset: nullableStr(),
+          file: nullableStr(),
+          mode: str({ choices: ["stretch", "cone", "area"], initial: "area" })
+        })
       }),
       payload: new fields.SchemaField({
         kind: str({ choices: ["none", "roll", "hazard"], initial: "none" }),

@@ -79,7 +79,18 @@ class DetectionService {
       await note(res.skipped);
       return;
     }
-    await postDetectionResult({ token: tokenName, trapName, trapUuid: trap.uuid, total: res.total, dc, success: !!res.success });
+    let disableHTML = "";
+    let hazardActor = null;
+    if (res.success && payload.kind === "hazard" && payload.hazard?.actorUuid) {
+      try {
+        hazardActor = await fromUuid(payload.hazard.actorUuid);
+        if (hazardActor) disableHTML = adapter.getDisableHTML(hazardActor);
+      } catch (err) { this.log.error("disable text failed", err); }
+    }
+    await postDetectionResult({
+      token: tokenName, trapName, trapUuid: trap.uuid, total: res.total, dc, success: !!res.success,
+      disableHTML, actor: hazardActor
+    });
   }
 }
 

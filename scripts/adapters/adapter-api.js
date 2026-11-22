@@ -24,8 +24,8 @@ export class TrapAdapter {
   /** @type {string} */
   get id() { return "base"; }
 
-  /** @returns {{roll:boolean, hazard:boolean, detection:boolean}} */
-  get capabilities() { return { roll: false, hazard: false, detection: false }; }
+  /** @returns {{roll:boolean, hazard:boolean, detection:boolean, browse:boolean}} */
+  get capabilities() { return { roll: false, hazard: false, detection: false, browse: false }; }
 
   /** Post the roll payload. @param {PayloadContext} ctx @returns {Promise<{dc?:number|null, notes?:string[]}|void>} */
   async rollPayload(ctx) { throw new UnsupportedPayloadError(this.id, "rollPayload"); }
@@ -38,6 +38,23 @@ export class TrapAdapter {
 
   /** @param {object} ctx @returns {number|null} */
   getStealthDC(ctx) { throw new UnsupportedPayloadError(this.id, "getStealthDC"); }
+
+  /**
+   * Summarise a hazard actor for trap configuration.
+   * @param {Actor} actor
+   * @returns {{kind:string, level:number, isComplex:boolean, stealthDC:number|null, minRank:number, actionId:string|null,
+   *   disableHTML:string, resetText:string, rearmSeconds:number|null}|null}
+   */
+  describeHazard(actor) { throw new UnsupportedPayloadError(this.id, "describeHazard"); }
+
+  /** Disable-check HTML of a hazard actor ("" when none). @param {Actor} actor @returns {string} */
+  getDisableHTML(actor) { throw new UnsupportedPayloadError(this.id, "getDisableHTML"); }
+
+  /** Display label for a trait slug. @param {string} slug @returns {string} */
+  traitLabel(slug) { return String(slug); }
+
+  /** Compendium hazard index for the browser. @param {{refresh?:boolean}} [opts] @returns {Promise<object[]>} */
+  async getHazardIndex(opts) { throw new UnsupportedPayloadError(this.id, "getHazardIndex"); }
 
   /**
    * Check a payload before firing (e.g. a broken hazard link). May be sync or async.

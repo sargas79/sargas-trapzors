@@ -1,9 +1,13 @@
 // Foundry-dependent. Never import from tests.
 // Sheet for the trap RegionBehavior: Effect / Payload / Lifecycle / Detection tabs. GM only.
 import { MODULE_ID } from "../core/constants.js";
-import { formToTrapUpdate, trapToFormContext, ALLOWED_DISPOSITIONS, ANCHORS, SHAPES, SAVE_STATS, DC_SOURCES } from "../core/trap-form.js";
+import { formToTrapUpdate, trapToFormContext, splitRearm, REARM_UNITS, ALLOWED_DISPOSITIONS, ANCHORS, SHAPES, SAVE_STATS, DC_SOURCES } from "../core/trap-form.js";
+import { rearmRemaining, formatDuration } from "../core/hazard-info.js";
+import { configureTrapFromHazard } from "../foundry/hazard-traps.js";
 import { getAdapter } from "../foundry/payload-service.js";
-import { createEffectArea, setBlockedByWalls, previewEffect, getEffectRegion } from "../foundry/effect-area.js";
+import { createEffectArea, setBlockedByWalls, previewEffect, getEffectRegion, resolveEffectShapes } from "../foundry/effect-area.js";
+import { jb2aRoot, presetAvailable, playAnimation } from "../foundry/animations.js";
+import { ANIMATION_PRESETS, ANIMATION_GROUPS, ANIMATION_MODES, presetsByGroup } from "../core/animation-presets.js";
 import { createDetectionArea, reveal } from "../foundry/detection-service.js";
 import { getLinkStatus, repairLinks } from "../foundry/linked-regions.js";
 import { getTriggerService } from "../foundry/trigger-service.js";
@@ -31,12 +35,15 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     actions: {
       placeEffect: this.#onPlaceEffect,
       previewEffect: this.#onPreview,
+      previewAnimation: this.#onPreviewAnimation,
+      browseAnimation: this.#onBrowseAnimation,
       repairLinks: this.#onRepair,
       resetTrap: this.#onReset,
       createDetection: this.#onCreateDetection,
       revealTrap: this.#onReveal,
       testFire: this.#onTestFire,
-      browseSound: this.#onBrowseSound
+      browseSound: this.#onBrowseSound,
+      configureFromHazard: this.#onConfigureFromHazard
     }
   };
 
@@ -89,6 +96,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       name: trapName(b),
       enabled: !b.disabled,
       reusable: s.reusable,
+      rearm: splitRearm(s.rearmSeconds),
       trigger: {
         dispositions: ALLOWED_DISPOSITIONS.filter((d) => ctx.dispositions[d]).map(String),
         actorTypes: s.trigger.actorTypes ?? [],
@@ -225,6 +233,9 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       detectionLink: linkView(links.detection),
       effectStrip: this.#strip("effect", links.effect, getEffectRegion(b)),
       detectionStrip: this.#strip("detection", links.detection, b.scene?.regions?.get(b.system.detection.regionId)),
+      rearmUnits: toOptions(Object.keys(REARM_UNITS).map((u) => ({ value: u, label: L(`SARGAS_TRAPZORS.Config.RearmUnit.${u}`) })), v.rearm.unit),
+      rearmIn: this.#rearmIn(b),
+      animation: await this.#animationContext(v),
       anchorHint: L(`SARGAS_TRAPZORS.Config.Anchor.hint.${v.effect.anchor}`),
       kindHint: L(`SARGAS_TRAPZORS.Config.Kind.hint.${v.payload.kind}`),
       lastFired: b.system.lastFired ? relativeTime(b.system.lastFired.at) : L("SARGAS_TRAPZORS.Config.Never"),
@@ -235,6 +246,48 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       actorTypes,
       soundPath: v.payload.soundPath ?? ""
     });
+  }
+
+  /** Animation select (None, preset groups, Custom), custom-file fields and JB2A availability. */
+  async #animationContext(v) {
+    const anim = v.effect.animation ?? {};
+    const hasJb2a = jb2aRoot() !== null;
+    // null = stored value; "" = the user picked None; "custom" = the user picked Custom file.
+    const selected = anim.preset === "custom" ? "custom" : anim.preset ? anim.preset : (anim.preset === null && anim.file ? "custom" : "");
+    const groups = [];
+    if (hasJb2a) {
+      const ok = new Map(await Promise.all(ANIMATION_PRESETS.map(async (pr) => [pr.id, await presetAvailable(pr)])));
+      for (const g of ANIMATION_GROUPS) {
+        groups.push({
+          label: L(`SARGAS_TRAPZORS.Animation.Group.${g}`),
+          options: presetsByGroup(g).map((pr) => {
+            const missing = !ok.get(pr.id);
+            return {
+              value: pr.id,
+              label: missing ? `${L(pr.labelKey)} ${L("SARGAS_TRAPZORS.Animation.NotInstalled")}` : L(pr.labelKey),
+              selected: pr.id === selected,
+              disabled: missing && pr.id !== selected // a disabled option is not submitted: keep the stored one enabled
+            };
+          })
+        });
+      }
+    }
+    return {
+      options: [{ value: "", label: L("SARGAS_TRAPZORS.Animation.None"), selected: selected === "" }],
+      groups,
+      isCustom: selected === "custom",
+      file: anim.file ?? "",
+      modes: toOptions(ANIMATION_MODES.map((m) => ({ value: m, label: L(`SARGAS_TRAPZORS.Animation.Mode.${m}`) })), anim.mode ?? "area"),
+      hasJb2a
+    };
+  }
+
+  /** "re-arms in ..." for a spent trap with a timer; null otherwise. */
+  #rearmIn(b) {
+    const s = b.system;
+    if (s.status !== "spent") return null;
+    const left = rearmRemaining({ rearmSeconds: s.rearmSeconds, firedWorldTime: s.lastFired?.worldTime ?? null, now: game.time.worldTime });
+    return left === null ? null : L("SARGAS_TRAPZORS.Manager.RearmsIn", { time: formatDuration(left) });
   }
 
   /** Status strip for a linked area. @param {"effect"|"detection"} role */
@@ -270,9 +323,26 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     let note = null;
     if (actorUuid && !actorOk) note = L("SARGAS_TRAPZORS.Config.HazardBrokenActor");
     else if (itemId && !itemOk) note = L("SARGAS_TRAPZORS.Config.HazardBrokenItem");
+    let summary = null;
+    const adapter = getAdapter();
+    if (actorOk && adapter.capabilities.hazard) {
+      const info = adapter.describeHazard(actor);
+      if (info) {
+        const rank = info.minRank > 0
+          ? L(`SARGAS_TRAPZORS.Config.Rank.${RANK_KEYS[info.minRank]}`)
+          : L("SARGAS_TRAPZORS.Hazard.NoMinRank");
+        summary = L("SARGAS_TRAPZORS.Hazard.Summary", {
+          kind: L(`SARGAS_TRAPZORS.Browser.Kind.${info.kind}`),
+          level: info.level,
+          dc: info.stealthDC ?? "?",
+          rank
+        });
+      }
+    }
     return {
       actors: toOptions(list, actorUuid),
       items: toOptions(items, itemId),
+      summary,
       hasActor: actorOk,
       broken: !!note,
       note
@@ -299,7 +369,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     this.element.addEventListener("change", (event) => {
       this.#dirty = true;
       const name = event.target?.name;
-      if (["payload.kind", "payload.hazard.actorUuid", "effect.anchor"].includes(name)) this.render();
+      if (["payload.kind", "payload.hazard.actorUuid", "effect.anchor", "effect.animation.preset"].includes(name)) this.render();
     });
     const rerender = debounce(() => { if (this.rendered) this.render(); }, 100);
     const sceneId = this.document.parent?.parent?.id;
@@ -337,6 +407,41 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     try { await previewEffect(this.document); } catch (err) { ui.notifications.error(err.message, { console: false }); }
   }
 
+  /** GM-local preview of the current (possibly unsaved) animation choice on the effect area. */
+  static async #onPreviewAnimation() {
+    const el = this.element;
+    const sel = el.querySelector('[name="effect.animation.preset"]')?.value ?? "";
+    const file = el.querySelector('[name="effect.animation.file"]')?.value.trim() ?? "";
+    const mode = el.querySelector('[name="effect.animation.mode"]')?.value ?? "area";
+    let animation = null;
+    if (sel === "custom" && file) animation = { preset: null, file, mode };
+    else if (sel && sel !== "custom") animation = { preset: sel, file: null, mode };
+    if (!animation) {
+      ui.notifications.warn(L("SARGAS_TRAPZORS.Animation.PreviewNone"));
+      return;
+    }
+    const shapes = resolveEffectShapes(this.document, firstControlledToken()?.document);
+    if (!shapes) {
+      ui.notifications.warn(L("SARGAS_TRAPZORS.Animation.PreviewNoArea"));
+      return;
+    }
+    const played = await playAnimation(this.document, shapes, { test: true, animation });
+    if (!played) ui.notifications.warn(L("SARGAS_TRAPZORS.Animation.PreviewFailed"));
+  }
+
+  static #onBrowseAnimation() {
+    const input = this.element.querySelector('[name="effect.animation.file"]');
+    new foundry.applications.apps.FilePicker.implementation({
+      type: "imagevideo",
+      current: input?.value ?? "",
+      callback: (path) => {
+        if (!input) return;
+        input.value = path;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }).render({ force: true });
+  }
+
   static async #onRepair() {
     try { await repairLinks(this.document); } catch (err) { ui.notifications.error(err.message, { console: false }); }
     await this.render();
@@ -359,6 +464,33 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       console.error(err);
       ui.notifications.error(err.message, { console: false });
     }
+    await this.render();
+  }
+
+  /** Overwrite detection and lifecycle settings from the hazard picked in the Payload tab. */
+  static async #onConfigureFromHazard() {
+    const actorUuid = this.element.querySelector('[name="payload.hazard.actorUuid"]')?.value;
+    const actor = actorUuid ? await fromUuid(actorUuid) : null;
+    if (!actor) {
+      ui.notifications.warn(L("SARGAS_TRAPZORS.Hazard.PickFirst"));
+      return;
+    }
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: L("SARGAS_TRAPZORS.Hazard.ConfigureTitle") },
+      content: `<p>${foundry.utils.escapeHTML(L("SARGAS_TRAPZORS.Hazard.ConfigureBody", { name: actor.name }))}</p>`,
+      rejectClose: false,
+      modal: true
+    });
+    if (!ok) return;
+    try {
+      await configureTrapFromHazard(this.document, actor);
+    } catch (err) {
+      console.error(err);
+      ui.notifications.error(err.message, { console: false });
+      return;
+    }
+    this.#draft = null;
+    this.#dirty = false;
     await this.render();
   }
 
