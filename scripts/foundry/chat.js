@@ -78,25 +78,23 @@ export async function postDetectionNote(text) {
 }
 
 /**
- * Wire chat buttons. Call once from ready.
+ * Wire chat buttons. Call once from ready. One delegated listener on the document, so buttons on messages
+ * rendered before `ready` (the chat history after a reload) and in popped-out messages work too. GM only.
  * @param {{onReveal:(trapUuid:string)=>Promise<void>}} handlers
  */
 export function registerChatHooks({ onReveal } = {}) {
-  Hooks.on("renderChatMessageHTML", (message, html) => {
-    if (!game.user.isGM) return;
-    html.querySelectorAll('[data-action="sargas-trapzors-select"]').forEach((btn) => {
-      btn.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        selectTokens((btn.dataset.tokenUuids ?? "").split(",").filter(Boolean));
-      });
-    });
-    html.querySelectorAll('[data-action="sargas-trapzors-reveal"]').forEach((btn) => {
-      btn.addEventListener("click", async (ev) => {
-        ev.preventDefault();
-        btn.disabled = true;
-        try { await onReveal?.(btn.dataset.trapUuid); }
-        catch (err) { btn.disabled = false; ui.notifications.error(String(err?.message ?? err)); }
-      });
-    });
+  document.addEventListener("click", async (ev) => {
+    const btn = ev.target?.closest?.('[data-action="sargas-trapzors-select"], [data-action="sargas-trapzors-reveal"]');
+    if (!btn || !btn.closest(".chat-message")) return;
+    ev.preventDefault();
+    if (!game.user?.isGM) return;
+    if (btn.dataset.action === "sargas-trapzors-select") {
+      selectTokens((btn.dataset.tokenUuids ?? "").split(",").filter(Boolean));
+      return;
+    }
+    if (btn.disabled) return;
+    btn.disabled = true;
+    try { await onReveal?.(btn.dataset.trapUuid); }
+    catch (err) { btn.disabled = false; ui.notifications.error(String(err?.message ?? err)); }
   });
 }

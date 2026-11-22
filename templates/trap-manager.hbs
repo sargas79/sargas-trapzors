@@ -16,6 +16,7 @@
       <div class="st-cell">
         <span class="st-pill st-status-{{status.key}}"><i class="st-dot" inert></i>{{status.label}}</span>
         {{#if disabled}}<span class="st-pill st-disabled">{{localize "SARGAS_TRAPZORS.Status.disabled"}}</span>{{/if}}
+        {{#if inEncounter}}<span class="st-pill st-encounter">{{localize "SARGAS_TRAPZORS.Manager.InEncounter"}}</span>{{/if}}
         {{#if revealed}}<span class="st-pill st-revealed">{{localize "SARGAS_TRAPZORS.Status.revealed"}}</span>{{/if}}
       </div>
       <div class="st-cell">{{kind}}</div>
@@ -37,6 +38,7 @@
             <button type="button" role="menuitem" data-action="pan"><i class="fa-solid fa-location-crosshairs" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.pan"}}</button>
             <button type="button" role="menuitem" data-action="preview"><i class="fa-solid fa-eye" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.preview"}}</button>
             {{#if isHazard}}<button type="button" role="menuitem" data-action="disableChecks"><i class="fa-solid fa-unlock-keyhole" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.disableChecks"}}</button>{{/if}}
+            {{#if inEncounter}}<button type="button" role="menuitem" data-action="endHazard"><i class="fa-solid fa-flag-checkered" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.endHazard"}}</button>{{/if}}
             <button type="button" role="menuitem" data-action="duplicate"><i class="fa-solid fa-copy" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.duplicate"}}</button>
             <button type="button" role="menuitem" data-action="{{#if disabled}}enable{{else}}disable{{/if}}"><i class="fa-solid fa-power-off" inert></i> {{toggleLabel}}</button>
             <button type="button" role="menuitem" class="st-danger-text" data-action="delete"><i class="fa-solid fa-trash" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.delete"}}</button>

@@ -6,6 +6,7 @@ import { previewEffect } from "../foundry/effect-area.js";
 import { getTriggerService } from "../foundry/trigger-service.js";
 import { getAdapter } from "../foundry/payload-service.js";
 import { postDisableChecks } from "../foundry/chat.js";
+import { endHazard } from "../foundry/hazard-encounter.js";
 import { filterHazards, sortHazards } from "../core/hazard-browser.js";
 import { rearmRemaining, formatDuration } from "../core/hazard-info.js";
 import { L, statusInfo, trapName, debounce, relativeTime, firstControlledToken } from "./ui-helpers.js";
@@ -40,6 +41,7 @@ function subline(b) {
     const when = s.lastFired ? relativeTime(s.lastFired.at) : "?";
     const names = s.lastFired ? tokenNames(s.lastFired.tokenUuids) : "";
     const base = names ? L("SARGAS_TRAPZORS.Manager.FiredOn", { when, tokens: names }) : L("SARGAS_TRAPZORS.Manager.Fired", { when });
+    if (s.encounter?.tokenId && s.rearmSeconds != null) return `${base} · ${L("SARGAS_TRAPZORS.Manager.RearmsAfterEncounter")}`;
     const left = rearmRemaining({ rearmSeconds: s.rearmSeconds, firedWorldTime: s.lastFired?.worldTime ?? null, now: game.time.worldTime });
     return left === null ? base : `${base} \u00b7 ${L("SARGAS_TRAPZORS.Manager.RearmsIn", { time: formatDuration(left) })}`;
   }
@@ -117,6 +119,7 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
       duplicate: this.#act("duplicate"),
       delete: this.#act("delete"),
       disableChecks: this.#act("disableChecks"),
+      endHazard: this.#act("endHazard"),
       toggleMenu: this.#onToggleMenu,
       refreshIndex: this.#onRefreshIndex,
       showMore: this.#onShowMore,
@@ -178,6 +181,7 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
         status,
         disabled: !!b.disabled,
         revealed: !!b.system.revealed,
+        inEncounter: !!b.system.encounter?.tokenId,
         isHazard: b.system.payload.kind === "hazard" && !!b.system.payload.hazard.actorUuid,
         pending: status.key === "pending" && !b.disabled,
         kind: L(`SARGAS_TRAPZORS.Config.Kind.${b.system.payload.kind}`),
@@ -433,6 +437,7 @@ export class TrapManager extends HandlebarsApplicationMixin(ApplicationV2) {
         if (!String(html).trim()) { ui.notifications.warn(L("SARGAS_TRAPZORS.Hazard.NoDisable")); return; }
         return postDisableChecks({ trapName: trapName(b), html, actor });
       }
+      case "endHazard": return endHazard(b, { log: service?.log });
       case "duplicate": return duplicateTrap(b);
       case "delete": return deleteTrap(b);
       case "pan": {

@@ -188,3 +188,19 @@ test("a reusable trap with a re-arm timer is spent until re-armed; without one i
   assert.equal(fire(mk({ reusable: true, rearmSeconds: 60 })).state.status, "spent");
   assert.equal(fire(mk({ reusable: false, rearmSeconds: 60 })).state.status, "spent");
 });
+
+test("a running hazard encounter blocks triggering, even for an armed trap", () => {
+  const running = mk({ encounter: { tokenId: "tok", combatId: "cmb" } });
+  assert.equal(canTrigger(running), false);
+  const r = trig(running);
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, "not-triggerable");
+  assert.equal(canTrigger(mk({ encounter: { tokenId: null, combatId: null } })), true);
+  assert.equal(canTrigger({ ...mk(), encounter: undefined }), true, "old state without encounter still triggers");
+});
+
+test("reset keeps the state shape and a reusable trap is armed again", () => {
+  const r = transition(mk({ status: "spent", encounter: { tokenId: "tok", combatId: "cmb" } }), { type: "reset" });
+  assert.equal(r.ok, true);
+  assert.equal(r.state.status, "armed");
+});

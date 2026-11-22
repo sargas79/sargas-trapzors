@@ -196,3 +196,23 @@ test("animation fields: preset, custom file, mode", () => {
   assert.equal(r.ok, false);
   assert.deepEqual(errs(r), ["effect.animation.preset:AnimationPreset", "effect.animation.mode:AnimationMode"]);
 });
+
+test("encounter settings are mapped and validated", () => {
+  const f = base();
+  f.payload.hazard = { actorUuid: "", itemId: "", encounter: { enabled: false, add: "affected" } };
+  const r = formToTrapUpdate(f);
+  assert.equal(r.update["system.payload.hazard.encounter.enabled"], false);
+  assert.equal(r.update["system.payload.hazard.encounter.add"], "affected");
+  f.payload.hazard.encounter = { enabled: "on", add: "none" };
+  const r2 = formToTrapUpdate(f);
+  assert.equal(r2.update["system.payload.hazard.encounter.enabled"], true);
+  assert.equal(r2.update["system.payload.hazard.encounter.add"], "none");
+  f.payload.hazard.encounter = { enabled: true, add: "everyone" };
+  assert.deepEqual(errs(formToTrapUpdate(f)), ["payload.hazard.encounter.add:EncounterAdd"]);
+});
+
+test("encounter settings are left alone when the sheet did not show them", () => {
+  const r = formToTrapUpdate(base());
+  assert.equal("system.payload.hazard.encounter.enabled" in r.update, false);
+  assert.equal("system.payload.hazard.encounter.add" in r.update, false);
+});

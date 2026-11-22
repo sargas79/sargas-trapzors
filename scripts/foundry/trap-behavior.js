@@ -1,5 +1,6 @@
 // Foundry-dependent. Never import from tests.
 import { CURRENT_SCHEMA_VERSION, STATUS, DISPOSITIONS } from "../core/constants.js";
+import { ENCOUNTER_ADD_MODES } from "../core/encounter.js";
 import { makeTriggerKey } from "../core/dedupe.js";
 import { evaluateEligibility } from "../core/eligibility.js";
 import { canTrigger } from "../core/trap-state.js";
@@ -50,6 +51,10 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         tokenUuids: new fields.ArrayField(str(), { required: true, initial: () => [] }),
         worldTime: new fields.NumberField({ required: true, nullable: true, initial: null })
       }, { required: true, nullable: true, initial: null }),
+      encounter: new fields.SchemaField({
+        tokenId: nullableStr(),
+        combatId: nullableStr()
+      }),
       trigger: new fields.SchemaField({
         dispositions: new fields.ArrayField(
           new fields.NumberField({ required: true, nullable: false, integer: true }),
@@ -87,7 +92,11 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         hazard: new fields.SchemaField({
           actorUuid: nullableStr(),
           itemId: nullableStr(),
-          strikeTargets: str({ choices: ["affected", "triggering"], initial: "affected" })
+          strikeTargets: str({ choices: ["affected", "triggering"], initial: "affected" }),
+          encounter: new fields.SchemaField({
+            enabled: bool(true),
+            add: str({ choices: [...ENCOUNTER_ADD_MODES], initial: "triggering" })
+          })
         })
       }),
       detection: new fields.SchemaField({

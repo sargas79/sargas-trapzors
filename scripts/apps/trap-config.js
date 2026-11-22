@@ -3,6 +3,7 @@
 import { MODULE_ID } from "../core/constants.js";
 import { formToTrapUpdate, trapToFormContext, splitRearm, REARM_UNITS, ALLOWED_DISPOSITIONS, ANCHORS, SHAPES, SAVE_STATS, DC_SOURCES } from "../core/trap-form.js";
 import { rearmRemaining, formatDuration } from "../core/hazard-info.js";
+import { ENCOUNTER_ADD_MODES } from "../core/encounter.js";
 import { configureTrapFromHazard } from "../foundry/hazard-traps.js";
 import { getAdapter } from "../foundry/payload-service.js";
 import { createEffectArea, setBlockedByWalls, previewEffect, getEffectRegion, resolveEffectShapes } from "../foundry/effect-area.js";
@@ -328,10 +329,12 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     if (actorUuid && !actorOk) note = L("SARGAS_TRAPZORS.Config.HazardBrokenActor");
     else if (itemId && !itemOk) note = L("SARGAS_TRAPZORS.Config.HazardBrokenItem");
     let summary = null;
+    let complex = false;
     const adapter = getAdapter();
     if (actorOk && adapter.capabilities.hazard) {
       const info = adapter.describeHazard(actor);
       if (info) {
+        complex = info.isComplex && !!adapter.capabilities.encounter;
         const rank = info.minRank > 0
           ? L(`SARGAS_TRAPZORS.Config.Rank.${RANK_KEYS[info.minRank]}`)
           : L("SARGAS_TRAPZORS.Hazard.NoMinRank");
@@ -355,6 +358,12 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
         strikeTargets
       ),
       summary,
+      isComplex: complex,
+      encounterEnabled: v.payload.hazard.encounter?.enabled !== false,
+      encounterAdd: toOptions(
+        ENCOUNTER_ADD_MODES.map((m) => ({ value: m, label: L(`SARGAS_TRAPZORS.Config.EncounterAddMode.${m}`) })),
+        v.payload.hazard.encounter?.add ?? "triggering"
+      ),
       hasActor: actorOk,
       broken: !!note,
       note

@@ -37,7 +37,7 @@ const REASON_KEYS = {
 
 export class Pf2eAdapter extends TrapAdapter {
   get id() { return "pf2e"; }
-  get capabilities() { return { roll: true, hazard: true, detection: true, browse: true }; }
+  get capabilities() { return { roll: true, hazard: true, detection: true, browse: true, encounter: true }; }
 
   /** Session cache of the compendium hazard index; a Promise so concurrent callers share one build. */
   #indexPromise = null;
@@ -103,34 +103,45 @@ export class Pf2eAdapter extends TrapAdapter {
     return { notes: [] };
   }
 
-  /**
-   * Roll the hazard strike's first variant (no MAP) against each target token; the system posts its own attack
-   * card with Damage / Critical buttons. Damage is never applied automatically.
-   * Options (pf2e 14.370 StrikeData variants[0].roll, pf2e.mjs ~20418): `target` (Token object), `event`.
-   * The dialog is skipped through a synthetic event (eventToRollParams, pf2e.mjs ~13752: shiftKey flips the
-   * showCheckDialogs default). Test mode rolls with `createMessage: false` and whispers a summary to GMs.
-   * pf2e needs a placed Token object as the target, so only tokens on the firing GM's viewed scene are rolled.
-   */
+  /** Payload strike: pick the targets from the trap settings, then roll through {@link rollStrike}. */
   async #postHazardStrike({ actor, item, payload, test, affected, triggering }) {
-    const notes = [];
-    const strike = actor.system?.actions?.find((a) => a.type === "strike" && a.item?.id === item.id);
-    const variant = strike?.variants?.[0];
-    if (!variant?.roll) return { notes: [L("SARGAS_TRAPZORS.Pf2e.StrikeMissing")] };
     const ids = (docs) => (docs ?? []).map((d) => d?.id).filter(Boolean);
     const { ids: targetIds, capped } = strikeTargets({
       affected: ids(affected), triggering: ids(triggering), mode: payload.hazard?.strikeTargets ?? "affected"
     });
-    if (!targetIds.length) return { notes: [L("SARGAS_TRAPZORS.Pf2e.StrikeNoTargets")] };
     const byId = new Map([...(affected ?? []), ...(triggering ?? [])].map((d) => [d.id, d]));
+    return this.rollStrike({ actor, item, targets: targetIds.map((id) => byId.get(id) ?? id), capped, test });
+  }
+
+  /**
+   * Roll a hazard strike's first variant (no MAP) against each target token; the system posts its own attack
+   * card with Damage / Critical buttons. Damage is never applied automatically. Shared by the payload and the
+   * routine card. `targets` are TokenDocuments (or ids, which are reported as missing); at most 10 are rolled.
+   * Options (pf2e 14.370 StrikeData variants[0].roll, pf2e.mjs ~20418): `target` (Token object), `event`.
+   * The dialog is skipped through a synthetic event (eventToRollParams, pf2e.mjs ~13752: shiftKey flips the
+   * showCheckDialogs default). Test mode rolls with `createMessage: false` and whispers a summary to GMs.
+   * pf2e needs a placed Token object as the target, so only tokens on the firing GM's viewed scene are rolled.
+   * @param {{actor:Actor, item:Item, targets:(TokenDocument|string)[], test?:boolean, capped?:boolean}} p
+   * @returns {Promise<{notes:string[]}>}
+   */
+  async rollStrike({ actor, item, targets, test = false, capped = false }) {
+    const notes = [];
+    const strike = actor.system?.actions?.find((a) => a.type === "strike" && a.item?.id === item.id);
+    const variant = strike?.variants?.[0];
+    if (!variant?.roll) return { notes: [L("SARGAS_TRAPZORS.Pf2e.StrikeMissing")] };
+    const unique = [...new Map((targets ?? []).map((t) => [typeof t === "string" ? t : t?.id, t])).values()];
+    if (!unique.length) return { notes: [L("SARGAS_TRAPZORS.Pf2e.StrikeNoTargets")] };
+    const max = 10;
+    const list = unique.slice(0, max);
+    capped ||= unique.length > max;
     // shiftKey flips pf2e's showCheckDialogs default, so the roll dialog is always skipped.
     const event = { shiftKey: !!game.user.settings?.showCheckDialogs, ctrlKey: false, metaKey: false };
     const testLines = [];
     let rolled = 0;
-    for (const id of targetIds) {
-      const doc = byId.get(id);
-      const token = doc?.object;
+    for (const doc of list) {
+      const token = typeof doc === "string" ? null : doc?.object;
       if (!token || doc.parent?.id !== canvas.scene?.id) {
-        notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeOffScene", { name: esc(doc?.name ?? id) }));
+        notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeOffScene", { name: esc(typeof doc === "string" ? doc : doc?.name ?? "?") }));
         continue;
       }
       try {
@@ -162,8 +173,44 @@ export class Pf2eAdapter extends TrapAdapter {
       });
     }
     notes.unshift(L("SARGAS_TRAPZORS.Pf2e.StrikeRolled", { count: rolled }));
-    if (capped) notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeCapped", { max: 10 }));
+    if (capped) notes.push(L("SARGAS_TRAPZORS.Pf2e.StrikeCapped", { max }));
     return { notes };
+  }
+
+  /**
+   * What the routine card needs from a hazard actor: routine HTML, strikes, non-passive actions, Stealth modifier.
+   * Hazard strikes are "melee" items (pf2e stores ranged ones as "melee" too); passive actions are left out.
+   * @param {Actor} actor
+   */
+  describeRoutine(actor) {
+    const items = actor?.items?.contents ?? [];
+    return {
+      isComplex: !!actor?.system?.details?.isComplex,
+      routineHTML: String(actor?.system?.details?.routine ?? ""),
+      strikes: items.filter((i) => i.type === "melee").map((i) => ({ id: i.id, name: i.name })),
+      actions: items
+        .filter((i) => i.type === "action" && i.system?.actionType?.value !== "passive")
+        .map((i) => ({ id: i.id, name: i.name })),
+      initiativeMod: actor?.initiative?.mod ?? null
+    };
+  }
+
+  /**
+   * Roll the hazard combatant's initiative (Stealth) without a dialog and without moving the turn marker.
+   * Rolls actor.initiative (Stealth for complex hazards) directly; its
+   * statistic roll honours `skipDialog` (pf2e.mjs ~19353); a hidden combatant rolls GM-only (pf2e.mjs ~34970).
+   * @param {Combat} combat
+   * @param {string} combatantId
+   * @returns {Promise<number|null>}
+   */
+  async rollEncounterInitiative(combat, combatantId) {
+    // Rolled with no chat message: a hidden combatant's GM-only roll would show players a
+    // "privately rolled some dice" placeholder. ActorInitiative#roll (pf2e.mjs ~34970) still sets the tracker value,
+    // and the GM summary reports the result.
+    const combatant = combat.combatants.get(combatantId);
+    const res = await combatant?.actor?.initiative?.roll({ combatant, skipDialog: true, createMessage: false });
+    const value = res?.roll?.total ?? combat.combatants.get(combatantId)?.initiative;
+    return typeof value === "number" ? value : null;
   }
 
   /** Fails early for a broken hazard link so the trap can stay pending. */
