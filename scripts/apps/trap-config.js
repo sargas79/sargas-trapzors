@@ -198,8 +198,9 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     return true;
   }
 
+  /** Save trap (or Enter in a field): save, then close. Place…, the previews and Test fire save without closing. */
   static async #onSubmit(event, form, formData) {
-    await this.#save(formData.object);
+    if (await this.#save(formData.object)) await this.close();
   }
 
   /* ------------------------------------------------------------ */

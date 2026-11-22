@@ -47,3 +47,14 @@ test("strikeTargets", () => {
 test("base adapter validatePayload is ok", () => {
   assert.deepEqual(new TrapAdapter().validatePayload({ kind: "hazard" }), { ok: true });
 });
+
+test("toolbeltTargetFlags keeps token UUIDs only, deduplicated", async () => {
+  const { toolbeltTargetFlags } = await import("../scripts/core/pf2e-text.js");
+  assert.deepEqual(toolbeltTargetFlags(["Scene.a.Token.b", "Scene.a.Token.b", "Actor.x", "Scene.a.Token.c", null]), {
+    "pf2e-toolbelt": { targetHelper: { targets: ["Scene.a.Token.b", "Scene.a.Token.c"] } }
+  });
+  assert.deepEqual(toolbeltTargetFlags(["Actor.x"]), {});
+  assert.deepEqual(toolbeltTargetFlags([]), {});
+  assert.deepEqual(toolbeltTargetFlags(undefined), {});
+  assert.deepEqual(toolbeltTargetFlags(["Scene.a.Token.b.Item.c"]), {});
+});
