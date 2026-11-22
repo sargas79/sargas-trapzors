@@ -8,6 +8,7 @@ import { buildDetectionShape, unitsToPixels } from "../core/geometry.js";
 import { removeLinkedRegion } from "./linked-regions.js";
 import { getAdapter } from "./payload-service.js";
 import { postDetectionResult, postDetectionNote } from "./chat.js";
+import { playGlow } from "./animations.js";
 
 const L = (k, d) => (d ? game.i18n.format(k, d) : game.i18n.localize(k));
 const SKIP_KEYS = {
@@ -129,8 +130,11 @@ class DetectionService {
 export async function reveal(trap) {
   if (!game.user.isGM) throw new Error("Only a GM can do this.");
   trap = typeof trap === "string" ? fromUuidSync(trap) : trap;
+  const wasRevealed = !!trap.system.revealed;
   await trap.update({ "system.revealed": true });
   await trap.region.update({ visibility: CONST.REGION_VISIBILITY?.ALWAYS ?? 2 });
+  // The glow plays once, on the first reveal. playGlow never throws and loading a video must not delay the reveal.
+  if (!wasRevealed && trap.system.detection.revealGlow) playGlow(trap);
 }
 
 /**

@@ -1,6 +1,6 @@
 // Pure form <-> trap system mapping (no Foundry globals). Unit-tested in tests/trap-form.test.js.
 import { DISPOSITIONS } from "./constants.js";
-import { getPreset, ANIMATION_MODES } from "./animation-presets.js";
+import { getPreset, getGlow, ANIMATION_MODES } from "./animation-presets.js";
 import { STRIKE_TARGET_MODES } from "./pf2e-text.js";
 import { ENCOUNTER_ADD_MODES } from "./encounter.js";
 
@@ -100,6 +100,7 @@ export function formToTrapUpdate(formData, ctx = {}) {
   const animMode = isBlank(anim.mode) ? "area" : asString(anim.mode).trim();
   if (!ANIMATION_MODES.includes(animMode)) err("effect.animation.mode", "AnimationMode");
   const animFile = rawPreset === "custom" ? nullableString(anim.file) : null;
+  const animPersist = bool(anim.persist);
 
   // Payload
   const kind = asString(payload.kind);
@@ -146,6 +147,12 @@ export function formToTrapUpdate(formData, ctx = {}) {
   }
   const detEnabled = bool(detection.enabled);
   if (detEnabled && dcSource === "manual" && isBlank(detection.dc)) err("detection.dc", "DetectionDCRequired");
+  const rawGlow = asString(detection.revealGlow).trim();
+  let revealGlow = null;
+  if (rawGlow !== "") {
+    if (getGlow(rawGlow)) revealGlow = rawGlow;
+    else err("detection.revealGlow", "RevealGlow");
+  }
   const minRank = parseInteger(detection.minRank);
   if (minRank === null || minRank < 0 || minRank > 4) err("detection.minRank", "MinRank");
 
@@ -173,6 +180,7 @@ export function formToTrapUpdate(formData, ctx = {}) {
     "system.effect.animation.preset": animPreset,
     "system.effect.animation.file": animFile,
     "system.effect.animation.mode": animMode,
+    "system.effect.animation.persist": animPersist,
     "system.payload.kind": kind,
     "system.payload.flavor": asString(payload.flavor),
     "system.payload.soundPath": nullableString(payload.soundPath),
@@ -192,7 +200,8 @@ export function formToTrapUpdate(formData, ctx = {}) {
     "system.detection.dcSource": dcSource,
     "system.detection.dc": detDc,
     "system.detection.requireSearch": bool(detection.requireSearch),
-    "system.detection.minRank": minRank
+    "system.detection.minRank": minRank,
+    "system.detection.revealGlow": revealGlow
   };
   return {
     ok: true,

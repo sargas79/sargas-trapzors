@@ -2,6 +2,9 @@
 export const MODULE_ID = "sargas-trapzors";
 export const CURRENT_SCHEMA_VERSION = 3;
 
+/** World folder that holds hazard actors imported by the module. */
+export const HAZARD_FOLDER_NAME = "Sargas Trapzors hazards";
+
 /** @enum {string} */
 export const STATUS = Object.freeze({ ARMED: "armed", PENDING: "pending", SPENT: "spent" });
 

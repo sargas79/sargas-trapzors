@@ -1,5 +1,6 @@
 // Foundry-dependent. Never import from tests.
 // Turning hazard actors (pf2e/sf2e traps, haunts, ...) into configured traps.
+import { HAZARD_FOLDER_NAME } from "../core/constants.js";
 import { getAdapter } from "./payload-service.js";
 import { createDetectionArea } from "./detection-service.js";
 import { getLinkStatus } from "./linked-regions.js";
@@ -7,7 +8,7 @@ import { getEffectRegion } from "./effect-area.js";
 import { isAvailable } from "./animations.js";
 import { suggestPreset } from "../core/animation-presets.js";
 
-const FOLDER_NAME = "Sargas Trapzors hazards";
+const FOLDER_NAME = HAZARD_FOLDER_NAME;
 const L = (k, d) => (d ? game.i18n.format(k, d) : game.i18n.localize(k));
 
 /**

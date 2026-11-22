@@ -20,6 +20,7 @@ Run on 2026-11-21 by Claude Opus 5.5, driving a live Foundry instance in the bui
 | S4 Transient shapes, IDs, reveal | **Works.** Scene duplication keeps region and behavior IDs. |
 | S5 pf2e APIs | **Works** for damage, saves, hazard actions, secret Perception and Search. **Strikes deferred.** |
 | S6 Wall constraints | **Native and works** (`restriction` on the region). |
+| S7 Walls on a level that is not viewed | **Works on the viewed scene**, verified live on a two-level scene. |
 
 ## S1: Do player clients receive hidden region and behavior data? Broadcast
 
@@ -102,6 +103,24 @@ A region with `restriction: {enabled: true, type: "move"}` and exactly one level
   - The region has exactly one level, and that level `isView` on the client that computes it (the active GM, who views the scene).
   - Transient regions would call `updateShapeConstraints()` (no save) to compute it.
 - **Not verified:** whether `restriction.enabled` also makes the region block token movement. Check this before relying on it.
+
+## S7: Wall clipping for a level the GM is not viewing
+
+**Outcome: works on the viewed scene, not on a scene that is not viewed. Found by reading Foundry 14.370, then verified live.**
+
+- `RegionDocument#_computeShapeConstraints` returns null unless the region has exactly one level and that level `isView` (`client/documents/region.mjs:1062-1118`, the gate at 1068-1071). That is why native clipping is single-level only.
+- The wall edges themselves exist for every level of the viewed scene. `Scene#initializeEdges` (`client/documents/scene.mjs:958`) runs once the scene is viewed, and `Wall#initializeEdge` (`client/documents/wall.mjs:100-118`) adds each wall's edge to every level the wall is included in (`level.edges`). `ClockwiseSweepPolygon#_identifyEdges` reads `this.level.edges` (`client/canvas/geometry/clockwise-sweep.mjs:~234`), so a sweep for another level uses that level's walls.
+- **Approach:** build the transient region with `levels: [levelId]`, group its shapes by rounded origin, call `CONFIG.Canvas.polygonBackends.move.create(origin, {type: "move", level, priority, edgeTypes: {wall: true, outerBounds: true}, boundingBox: shapeBounds.fit(scene.dimensions.rect).ceil(), useThreshold: true})` and set the polygon points with `updateSource({_shapeConstraints: [...]})` (the field is `_shapeConstraints` in `common/documents/region.mjs:85`). This is what `_computeShapeConstraints` does for type "move", minus the `isView` gate. The viewed level keeps the native `updateShapeConstraints()`.
+- **A scene that is not viewed has no edges** (`initializeEdges` only runs for a viewed scene), so no clipping is possible there. The module skips it and the GM summary says so.
+- **Token level:** `TokenDocument#_source.level` (`client/documents/token.mjs:3236`); `testInsideRegion` already requires `region.includedInLevel(token level)` (`token.mjs:3237`), so a region limited to one level never contains tokens of another. `Level.elevation.base` (`client/documents/level.mjs:64`) is the elevation used for "lowest level".
+- **Not covered:** the red reveal region shown on the map is created through the normal path, whose `_preCreateOperation` (`region.mjs:1146`) recomputes the constraints natively, so it is only clipped when its level is the viewed one.
+- **Live verification (2026-11-22, Foundry 14.370, pf2e):**
+  - **Setup:** a scene with two levels, Ground (0–10) and Upper (10–20). A wall at x 1000 is on Ground only. The tokens are a large NPC in front of the wall on Ground, one behind it on Ground, and one in front on Upper. The effect area is a 1200 × 200 rectangle starting at x 600, and the triggering PC is on Ground.
+  - **Walls off:** all three tokens are hit.
+  - **Walls on:** only the Ground token in front of the wall is hit. This holds with the GM viewing Ground (native clipping) and with the GM viewing Upper (the S7 path). The Upper token is never hit through the Ground area.
+  - **GM on another scene:** the area isn't clipped, and both Ground tokens are hit. The GM summary says walls weren't applied.
+- **Restricted region with no constraints:** a transient region with `restriction.enabled` but no computed constraints contains nothing. So when clipping is impossible (scene not viewed, or the sweep failed), the module now uses the area unclipped, still limited to the chosen level. Before this, such a fire hit nobody, also in 0.3.0.
+- **pf2e note:** pf2e overrides `TokenDocument#testInsideRegion`. For a region whose single shape is a line, cone or circle (`isMeasuredArea`), it counts grid squares whose centre is in the area **and** has no movement wall between it and the shape's origin, on the token's level (`RegionDocumentPF2e#getCoverage`, pf2e.mjs ~20879). So in pf2e, line, cone and circle effect areas never pass through walls, whatever **Blocked by walls** says. The module's clipping matters for other shapes and for other systems.
 
 ## Proposed plan amendments (need approval)
 

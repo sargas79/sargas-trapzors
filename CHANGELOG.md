@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Blocked by walls on multi-level scenes**: the area is clipped by the walls of the triggering token's level (or, for a fixed area, the trigger region's level that holds the token, else its lowest level), even when the GM views another level, and tokens on other levels are not affected through it. If the trap's scene is not the viewed scene the area is used unclipped (on that level only) and the GM summary says so. Single-level scenes behave as before.
+- **Sargas Visual Automation support**: when it is active, trap animations play through it (same placement as the built-in player; Fire as test and Preview for GMs only). New world setting **Animation player** (Automatic or Built-in player). **Browse Visual Automation...** picks a JB2A database path, which needs Visual Automation to play. **Stay until reset** keeps the animation on the map until the trap is reset, re-arms, is disabled or deleted. A hazard actor the module imported has Visual Automation's own animation switched off when the trap fires with its own animation, to avoid two animations.
+- **Glow when revealed** (Detection tab): a Detect Magic circle in several colours or a divination rune pulse plays once over the trigger area for everyone when the trap is revealed, with a GM-only **Preview glow**. None by default.
+- Docs: animations were tested with JB2A Patreon (`jb2a_patreon`); the free JB2A is supported but untested.
+- Trap data gains `effect.animation.persist` and `detection.revealGlow` (defaults filled in for existing traps; no schema version change).
+
 - **Theater of the mind**: **Fire at…** (Trap Manager row menu and trap sheet) fires a trap at party members, player characters or targeted/selected tokens without moving tokens; the map effect area is skipped, the GM summary lists the targets and the trap's state changes as for any manual fire. **Fire as test (GM only)** changes nothing. Hazard strikes at a character with no token are rolled with no target and the GM gets a whispered hit or miss line against the actor's AC (degree computed with the pf2e rules).
 - **Detection check…** rolls chosen characters' Perception against the trap's Stealth DC with the usual rules (Search, minimum rank, one check per target) and posts the usual GM result with Reveal.
 - Trap Manager **This scene** / **All scenes** switch, so traps on a "library" scene can be fired from any scene.
@@ -16,6 +22,7 @@
 ### Fixed
 
 - Chat buttons (Reveal, Select tokens, the routine card's buttons) now work on messages rendered before the module was ready, such as the chat history after a reload.
+- A trap with **Blocked by walls** that fired while the GM viewed another scene hit nobody (a wall-restricted area that cannot be clipped contains nothing). The area is now used unclipped, as the GM note says.
 
 ## 0.3.0 — 2026-11-22
 

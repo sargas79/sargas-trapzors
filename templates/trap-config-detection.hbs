@@ -53,6 +53,18 @@
     <div class="form-fields"><input id="st-det-search" type="checkbox" name="detection.requireSearch" {{#if v.detection.requireSearch}}checked{{/if}}></div>
   </div>
   <div class="form-group">
+    <label for="st-det-glow">{{localize "SARGAS_TRAPZORS.Glow.label"}}</label>
+    <div class="form-fields">
+      <select id="st-det-glow" name="detection.revealGlow">
+        {{#each glow.options}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+      <button type="button" data-action="previewGlow" {{#unless glow.hasJb2a}}disabled{{/unless}}>
+        <i class="fa-solid fa-wand-magic-sparkles" inert></i> {{localize "SARGAS_TRAPZORS.Glow.Preview"}}
+      </button>
+    </div>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Glow.Hint"}}{{#unless glow.hasJb2a}} <span class="st-muted">{{localize "SARGAS_TRAPZORS.Animation.NoJb2a"}}</span>{{/unless}}</p>
+  </div>
+  <div class="form-group">
     <label>{{localize "SARGAS_TRAPZORS.Config.RevealedLabel"}}</label>
     <div class="form-fields">
       {{#if revealed}}

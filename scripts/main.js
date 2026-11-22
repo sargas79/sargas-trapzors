@@ -12,7 +12,7 @@ import { registerSceneControls, createTrapFromRegion, openTrapManager } from "./
 import { createTriggerService } from "./foundry/trigger-service.js";
 import { configureTrapFromHazard, importHazard } from "./foundry/hazard-traps.js";
 import { registerEncounterHooks } from "./foundry/hazard-encounter.js";
-import { registerAnimationSocket } from "./foundry/animations.js";
+import { registerAnimationSocket, registerAnimationHooks } from "./foundry/animations.js";
 import { debounce } from "./apps/ui-helpers.js";
 
 const log = createLogger({
@@ -64,6 +64,19 @@ Hooks.once("init", () => {
     type: Boolean,
     default: false
   });
+
+  game.settings.register(MODULE_ID, "animationPlayer", {
+    name: "SARGAS_TRAPZORS.Settings.AnimationPlayer.Name",
+    hint: "SARGAS_TRAPZORS.Settings.AnimationPlayer.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      auto: "SARGAS_TRAPZORS.Settings.AnimationPlayer.auto",
+      builtin: "SARGAS_TRAPZORS.Settings.AnimationPlayer.builtin"
+    },
+    default: "auto"
+  });
 });
 
 Hooks.once("ready", () => {
@@ -71,6 +84,7 @@ Hooks.once("ready", () => {
   log.info("ready", { version: game.modules.get(MODULE_ID)?.version });
   effectArea.cleanupReveals().catch((err) => log.error("reveal cleanup failed", err));
   registerAnimationSocket();
+  registerAnimationHooks();
   registerLinkedRegionHooks({ log });
   cleanupOrphans({ log }).catch((err) => log.error("orphan cleanup failed", err));
   createDetectionService({ log });
