@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, STATUS, DISPOSITIONS } from "./constants.js";
+import { defaultChallenge } from "./challenges.js";
 
 /**
  * Default trap system data (plan section 9). Returns a fresh deep object each call.
@@ -40,6 +41,7 @@ export function defaultTrapSystem() {
       minRank: 0,
       revealGlow: null,
       checked: []
-    }
+    },
+    challenge: defaultChallenge()
   };
 }

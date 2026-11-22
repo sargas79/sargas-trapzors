@@ -3,6 +3,7 @@ import { DISPOSITIONS } from "./constants.js";
 import { getPreset, getGlow, ANIMATION_MODES } from "./animation-presets.js";
 import { STRIKE_TARGET_MODES } from "./pf2e-text.js";
 import { ENCOUNTER_ADD_MODES } from "./encounter.js";
+import { MAX_TRIGGERS, WHENS, ACTIONS, EFFECT_KEYS, defaultChallenge } from "./challenges.js";
 
 export const ALLOWED_DISPOSITIONS = Object.freeze([-2, -1, 0, 1]);
 export const ANCHORS = Object.freeze(["fixed", "token"]);
@@ -58,6 +59,60 @@ const nullableString = (v) => {
   return s === "" ? null : s;
 };
 
+/** Rows of a repeated form group: an array, or an object keyed by index (as expanded form data can be). */
+export function formRows(v) {
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === "object") {
+    return Object.keys(v).filter((k) => /^[0-9]+$/.test(k)).sort((a, b) => Number(a) - Number(b)).map((k) => v[k]);
+  }
+  return [];
+}
+
+/**
+ * Map the Challenge tab's form values to `system.challenge`. A trigger row with no track is an unused slot and is
+ * dropped; the hidden detail fields that do not apply to the row's condition are stored as null.
+ * @param {object} form  `{triggers, effects}` as the form yields them
+ * @returns {{ok:true, value:object}|{ok:false, errors:{field:string, key:string}[]}}
+ */
+export function formToChallenge(form) {
+  const errors = [];
+  const err = (field, key) => errors.push({ field, key: `${K}${key}` });
+  const out = defaultChallenge();
+  formRows(form?.triggers).forEach((row, i) => {
+    const trackId = nullableString(row?.trackId);
+    if (!trackId) return;
+    const f = (name) => `challenge.triggers.${i}.${name}`;
+    const when = asString(row.when).trim();
+    if (!WHENS.includes(when)) { err(f("when"), "ChallengeWhen"); return; }
+    const action = isBlank(row.action) ? "ask" : asString(row.action).trim();
+    if (!ACTIONS.includes(action)) err(f("action"), "ChallengeAction");
+    const t = { trackId, when, value: null, stepId: null, bandId: null, action };
+    if (when === "reaches") {
+      const n = parseInteger(row.value);
+      if (n === null || n < 1) err(f("value"), "ChallengeValue"); else t.value = n;
+    } else if (when === "step") {
+      t.stepId = nullableString(row.stepId);
+      if (!t.stepId) err(f("stepId"), "ChallengeStep");
+    } else if (when === "band") {
+      t.bandId = nullableString(row.bandId);
+      if (!t.bandId) err(f("bandId"), "ChallengeBand");
+    }
+    if (out.triggers.length >= MAX_TRIGGERS) { err("challenge.triggers", "ChallengeMax"); return; }
+    out.triggers.push(t);
+  });
+  for (const key of EFFECT_KEYS) {
+    const e = form?.effects?.[key] ?? {};
+    const trackId = nullableString(e.trackId);
+    let delta = 0;
+    if (trackId && !isBlank(e.delta)) {
+      const n = parseInteger(e.delta);
+      if (n === null) err(`challenge.effects.${key}.delta`, "ChallengeDelta"); else delta = n;
+    }
+    out.effects[key] = { trackId, delta: trackId ? delta : 0 };
+  }
+  return errors.length ? { ok: false, errors } : { ok: true, value: out };
+}
+
 /**
  * Map an expanded form object to a flat `system.*` update for the trap behavior.
  * Runtime state (status, pending, lastFired, revealed, checked, schemaVersion, region ids) is never emitted.
@@ -79,6 +134,9 @@ export function formToTrapUpdate(formData, ctx = {}) {
   const detection = f.detection ?? {};
   const rearm = f.rearm ?? {};
   const errors = [];
+  // The Challenge tab exists only while Victory Counter is active: without its values, leave the stored ones alone.
+  const challengeRes = f.challenge ? formToChallenge(f.challenge) : null;
+  if (challengeRes && !challengeRes.ok) errors.push(...challengeRes.errors);
   const err = (field, key) => errors.push({ field, key: `${K}${key}` });
   const allowedKinds = ctx.allowedKinds ?? KINDS;
 
@@ -201,7 +259,8 @@ export function formToTrapUpdate(formData, ctx = {}) {
     "system.detection.dc": detDc,
     "system.detection.requireSearch": bool(detection.requireSearch),
     "system.detection.minRank": minRank,
-    "system.detection.revealGlow": revealGlow
+    "system.detection.revealGlow": revealGlow,
+    ...(challengeRes ? { "system.challenge": challengeRes.value } : {})
   };
   return {
     ok: true,

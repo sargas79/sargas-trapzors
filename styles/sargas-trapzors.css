@@ -194,3 +194,9 @@
 .trap-manager .st-scope button.st-on { background: var(--st-accent); color: var(--st-accent-text); font-weight: 700; }
 .trap-manager .st-scene-tag { font-size: 12px; }
 .trap-manager .st-menu button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Challenge tab and manager pill (Victory Counter) */
+.trap-config .st-challenge-row { border-bottom: 1px dashed var(--st-border); padding-bottom: 6px; margin-bottom: 6px; }
+.trap-config .st-challenge-row:last-child { border-bottom: none; }
+.sargas-trapzors .st-challenge { background: transparent; color: var(--st-accent); border: 1px solid var(--st-accent); }
+.sargas-trapzors .st-challenge.st-challenge-broken { color: var(--st-broken-fg); border-color: var(--st-broken-border); background: var(--st-broken-bg); }

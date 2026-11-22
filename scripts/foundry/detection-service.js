@@ -9,6 +9,7 @@ import { removeLinkedRegion } from "./linked-regions.js";
 import { getAdapter } from "./payload-service.js";
 import { postDetectionResult, postDetectionNote } from "./chat.js";
 import { playGlow } from "./animations.js";
+import { applyChallengeEffect } from "./victory-counter.js";
 
 const L = (k, d) => (d ? game.i18n.format(k, d) : game.i18n.localize(k));
 const SKIP_KEYS = {
@@ -121,6 +122,7 @@ class DetectionService {
       token: tokenName, trapName, trapUuid: trap.uuid, total: res.total, dc, success: !!res.success,
       disableHTML, actor: hazardActor
     });
+    if (res.success) await applyChallengeEffect(trap, "noticed", { log: this.log });
   }
 }
 

@@ -1,0 +1,69 @@
+<section class="tab {{tab.cssClass}}" data-tab="challenge" data-group="primary">
+  <p class="hint">{{localize "SARGAS_TRAPZORS.Challenge.Intro"}}</p>
+
+  <fieldset>
+    <legend>{{localize "SARGAS_TRAPZORS.Challenge.Triggers"}}</legend>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Challenge.TriggersHint"}}</p>
+    {{#each challenge.triggers}}
+    <div class="st-challenge-row {{#if broken}}st-challenge-broken{{/if}}">
+      <div class="form-group">
+        <label for="st-ch-track-{{index}}">{{localize "SARGAS_TRAPZORS.Challenge.TriggerN" n=number}}</label>
+        <div class="form-fields">
+          <select id="st-ch-track-{{index}}" name="challenge.triggers.{{index}}.trackId">
+            {{#each tracks}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </div>
+      </div>
+      {{#if trackId}}
+      <div class="form-group">
+        <label for="st-ch-when-{{index}}">{{localize "SARGAS_TRAPZORS.Challenge.When"}}</label>
+        <div class="form-fields">
+          <select id="st-ch-when-{{index}}" name="challenge.triggers.{{index}}.when">
+            {{#each whens}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+          {{#if isReaches}}
+          <input type="number" name="challenge.triggers.{{index}}.value" value="{{value}}" min="1" step="1" aria-label="{{localize "SARGAS_TRAPZORS.Challenge.Value"}}">
+          {{/if}}
+          {{#if isStep}}
+          <select name="challenge.triggers.{{index}}.stepId" aria-label="{{localize "SARGAS_TRAPZORS.Challenge.Step"}}">
+            {{#each steps}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+          {{/if}}
+          {{#if isBand}}
+          <select name="challenge.triggers.{{index}}.bandId" aria-label="{{localize "SARGAS_TRAPZORS.Challenge.Band"}}">
+            {{#each bands}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+          {{/if}}
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="st-ch-action-{{index}}">{{localize "SARGAS_TRAPZORS.Challenge.Action"}}</label>
+        <div class="form-fields">
+          <select id="st-ch-action-{{index}}" name="challenge.triggers.{{index}}.action">
+            {{#each actions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </div>
+      </div>
+      {{/if}}
+      {{#if note}}<p class="st-warning">{{note}}</p>{{/if}}
+    </div>
+    {{/each}}
+  </fieldset>
+
+  <fieldset>
+    <legend>{{localize "SARGAS_TRAPZORS.Challenge.Effects"}}</legend>
+    <p class="hint">{{localize "SARGAS_TRAPZORS.Challenge.EffectsHint"}}</p>
+    {{#each challenge.effects}}
+    <div class="form-group">
+      <label for="st-ch-eff-{{key}}">{{label}}</label>
+      <div class="form-fields">
+        <select id="st-ch-eff-{{key}}" name="challenge.effects.{{key}}.trackId">
+          {{#each tracks}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+        <input type="number" name="challenge.effects.{{key}}.delta" value="{{delta}}" step="1" aria-label="{{localize "SARGAS_TRAPZORS.Challenge.Delta"}}">
+      </div>
+      {{#if note}}<p class="st-warning">{{note}}</p>{{/if}}
+    </div>
+    {{/each}}
+  </fieldset>
+</section>

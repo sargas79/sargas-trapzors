@@ -1,7 +1,7 @@
 // Foundry-dependent. Never import from tests.
-// Sheet for the trap RegionBehavior: Effect / Payload / Lifecycle / Detection tabs. GM only.
+// Sheet for the trap RegionBehavior: Effect / Payload / Lifecycle / Detection tabs (plus Challenge while Victory Counter is active). GM only.
 import { MODULE_ID } from "../core/constants.js";
-import { formToTrapUpdate, trapToFormContext, splitRearm, REARM_UNITS, ALLOWED_DISPOSITIONS, ANCHORS, SHAPES, SAVE_STATS, DC_SOURCES } from "../core/trap-form.js";
+import { formToTrapUpdate, formRows, trapToFormContext, splitRearm, REARM_UNITS, ALLOWED_DISPOSITIONS, ANCHORS, SHAPES, SAVE_STATS, DC_SOURCES } from "../core/trap-form.js";
 import { rearmRemaining, formatDuration } from "../core/hazard-info.js";
 import { ENCOUNTER_ADD_MODES } from "../core/encounter.js";
 import { configureTrapFromHazard } from "../foundry/hazard-traps.js";
@@ -13,6 +13,8 @@ import { createDetectionArea, reveal } from "../foundry/detection-service.js";
 import { getLinkStatus, repairLinks } from "../foundry/linked-regions.js";
 import { getTriggerService } from "../foundry/trigger-service.js";
 import { FireAtDialog } from "./fire-at-dialog.js";
+import { vcModule, getTracks } from "../foundry/victory-counter.js";
+import { MAX_TRIGGERS, WHENS, ACTIONS, EFFECT_KEYS, emptyTrigger, whensForMode, triggerBroken } from "../core/challenges.js";
 import { L, statusInfo, options as toOptions, debounce, linkView, confirmReplace, trapName, relativeTime, firstControlledToken } from "./ui-helpers.js";
 
 const { HandlebarsApplicationMixin, DocumentSheetV2 } = foundry.applications.api;
@@ -55,7 +57,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
   /** @override */
   static TABS = {
     primary: {
-      tabs: [{ id: "effect" }, { id: "payload" }, { id: "lifecycle" }, { id: "detection" }],
+      tabs: [{ id: "effect" }, { id: "payload" }, { id: "lifecycle" }, { id: "detection" }, { id: "challenge" }],
       initial: "effect",
       labelPrefix: "SARGAS_TRAPZORS.Config.Tab"
     }
@@ -69,8 +71,16 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     payload: { template: `${TPL}/trap-config-payload.hbs`, scrollable: [""] },
     lifecycle: { template: `${TPL}/trap-config-lifecycle.hbs`, scrollable: [""] },
     detection: { template: `${TPL}/trap-config-detection.hbs`, scrollable: [""] },
+    challenge: { template: `${TPL}/trap-config-challenge.hbs`, scrollable: [""] },
     footer: { template: `${TPL}/trap-config-footer.hbs` }
   };
+
+  /** @override The Challenge tab exists only while Victory Counter is active. */
+  _configureRenderParts(options) {
+    const parts = super._configureRenderParts(options);
+    if (!vcModule()) delete parts.challenge;
+    return parts;
+  }
 
   /** @override GM only. */
   _canRender(options) {
@@ -111,6 +121,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       effect: { ...s.effect },
       payload: foundry.utils.deepClone(s.payload),
       detection: { ...s.detection },
+      challenge: foundry.utils.deepClone(s.challenge),
       detectionRadius: 10
     };
   }
@@ -122,6 +133,10 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     const data = foundry.utils.mergeObject(base, form, { inplace: false });
     data.trigger.dispositions = form.trigger?.dispositions ?? [];
     data.trigger.actorTypes = form.trigger?.actorTypes ?? [];
+    // Repeated trigger rows are replaced as a whole (a deep merge would mix them with the stored rows).
+    data.challenge = form.challenge
+      ? { triggers: formRows(form.challenge.triggers), effects: foundry.utils.mergeObject(base.challenge.effects, form.challenge.effects ?? {}, { inplace: false }) }
+      : base.challenge;
     return data;
   }
 
@@ -157,6 +172,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       raw = new foundry.applications.ux.FormDataExtended(form).object;
     }
     const data = this.#collect(raw);
+    if (!vcModule()) delete data.challenge; // no Challenge tab: leave the stored challenge alone
     const res = formToTrapUpdate(data, { allowedKinds: this.#allowedKinds() });
     if (!res.ok) {
       ui.notifications.error(res.errors.map((e) => L(e.key)).join(" "), { console: false });
@@ -217,6 +233,9 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       checked: checkedDisp.has(String(d))
     }));
 
+    if (vcModule()) context.challenge = this.#challengeContext(v);
+    else delete context.tabs?.challenge;
+
     return Object.assign(context, {
       editable,
       trapName: v.name,
@@ -252,6 +271,61 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       actorTypes,
       soundPath: v.payload.soundPath ?? ""
     });
+  }
+
+  /** Trigger rows (always MAX_TRIGGERS slots; a slot with no track is unused) and the three effect rows. */
+  #challengeContext(v) {
+    const tracks = getTracks();
+    const none = { value: "", label: L("SARGAS_TRAPZORS.Challenge.None") };
+    const trackOptions = (sel) => {
+      const list = [none, ...tracks.map((t) => ({ value: t.id, label: t.title || t.id }))];
+      if (sel && !tracks.some((t) => t.id === sel)) list.push({ value: sel, label: L("SARGAS_TRAPZORS.Challenge.MissingTrack") });
+      return toOptions(list, sel ?? "");
+    };
+    const rungLabel = (r) => (r.label ? `${r.label} (${r.value})` : String(r.value));
+    const rungOptions = (rungs, sel) => {
+      const list = (rungs ?? []).map((r) => ({ value: r.id, label: rungLabel(r) }));
+      if (sel && !list.some((o) => o.value === sel)) list.push({ value: sel, label: L("SARGAS_TRAPZORS.Challenge.MissingTarget") });
+      return toOptions(list, sel ?? "");
+    };
+    const stored = v.challenge?.triggers ?? [];
+    const triggers = Array.from({ length: MAX_TRIGGERS }, (_, i) => {
+      const t = { ...emptyTrigger(), ...(stored[i] ?? {}) };
+      const trackId = t.trackId || "";
+      const track = tracks.find((x) => x.id === trackId) ?? null;
+      const allowed = track ? whensForMode(track.mode) : [...WHENS];
+      const when = allowed.includes(t.when) ? t.when : allowed[0];
+      const missing = !!trackId && !track;
+      const targetMissing = !!track && triggerBroken({ ...t, when }, tracks);
+      return {
+        index: i,
+        number: i + 1,
+        trackId,
+        tracks: trackOptions(trackId),
+        whens: toOptions(allowed.map((w) => ({ value: w, label: L(`SARGAS_TRAPZORS.Challenge.When_${w}`) })), when),
+        isReaches: when === "reaches",
+        isStep: when === "step",
+        isBand: when === "band",
+        value: t.value ?? "",
+        steps: rungOptions(track?.steps, t.stepId),
+        bands: rungOptions(track?.thresholds, t.bandId),
+        actions: toOptions(ACTIONS.map((a) => ({ value: a, label: L(`SARGAS_TRAPZORS.Challenge.Action_${a}`) })), t.action),
+        broken: missing || targetMissing,
+        note: missing ? L("SARGAS_TRAPZORS.Challenge.TrackNotFound") : targetMissing ? L("SARGAS_TRAPZORS.Challenge.TargetNotFound") : null
+      };
+    });
+    const effects = EFFECT_KEYS.map((key) => {
+      const e = v.challenge?.effects?.[key] ?? {};
+      const trackId = e.trackId || "";
+      return {
+        key,
+        label: L(`SARGAS_TRAPZORS.Challenge.Effect_${key}`),
+        tracks: trackOptions(trackId),
+        delta: e.delta ?? 0,
+        note: trackId && !tracks.some((t) => t.id === trackId) ? L("SARGAS_TRAPZORS.Challenge.TrackNotFound") : null
+      };
+    });
+    return { triggers, effects };
   }
 
   /** Animation select (None, preset groups, Custom), custom-file fields and JB2A availability. */
@@ -412,7 +486,8 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     this.element.addEventListener("change", (event) => {
       this.#dirty = true;
       const name = event.target?.name;
-      if (["payload.kind", "payload.hazard.actorUuid", "payload.hazard.itemId", "effect.anchor", "effect.animation.preset"].includes(name)) this.render();
+      if (["payload.kind", "payload.hazard.actorUuid", "payload.hazard.itemId", "effect.anchor", "effect.animation.preset"].includes(name)
+        || /^challenge\.triggers\.\d+\.(trackId|when)$/.test(name ?? "")) this.render();
     });
     const rerender = debounce(() => { if (this.rendered) this.render(); }, 100);
     const sceneId = this.document.parent?.parent?.id;

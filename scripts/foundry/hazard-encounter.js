@@ -9,6 +9,7 @@ import { getAdapter } from "./payload-service.js";
 import { isAuthority } from "./authority.js";
 import { resolveAffectedTokens } from "./effect-area.js";
 import { enrichHazardHTML, postDisableChecks } from "./chat.js";
+import { applyChallengeEffect } from "./victory-counter.js";
 
 const esc = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 const gmIds = () => ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
@@ -183,6 +184,7 @@ export async function endHazard(behavior, { log } = {}) {
       content: `<p><em>${esc(L("SARGAS_TRAPZORS.Encounter.Ended", { hazard: actor?.name ?? trapNameOf(current) }))}</em></p>`,
       whisper: gmIds()
     });
+    await applyChallengeEffect(current, "disabled", { log });
     return true;
   } catch (err) {
     log?.error("end hazard failed", err);
