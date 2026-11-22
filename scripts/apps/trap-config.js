@@ -1,7 +1,9 @@
 // Foundry-dependent. Never import from tests.
 // Sheet for the trap RegionBehavior: Effect / Payload / Lifecycle / Detection tabs. GM only.
 import { MODULE_ID } from "../core/constants.js";
-import { formToTrapUpdate, trapToFormContext, ALLOWED_DISPOSITIONS, ANCHORS, SHAPES, SAVE_STATS, DC_SOURCES } from "../core/trap-form.js";
+import { formToTrapUpdate, trapToFormContext, splitRearm, REARM_UNITS, ALLOWED_DISPOSITIONS, ANCHORS, SHAPES, SAVE_STATS, DC_SOURCES } from "../core/trap-form.js";
+import { rearmRemaining, formatDuration } from "../core/hazard-info.js";
+import { configureTrapFromHazard } from "../foundry/hazard-traps.js";
 import { getAdapter } from "../foundry/payload-service.js";
 import { createEffectArea, setBlockedByWalls, previewEffect, getEffectRegion } from "../foundry/effect-area.js";
 import { createDetectionArea, reveal } from "../foundry/detection-service.js";
@@ -36,7 +38,8 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       createDetection: this.#onCreateDetection,
       revealTrap: this.#onReveal,
       testFire: this.#onTestFire,
-      browseSound: this.#onBrowseSound
+      browseSound: this.#onBrowseSound,
+      configureFromHazard: this.#onConfigureFromHazard
     }
   };
 
@@ -89,6 +92,7 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       name: trapName(b),
       enabled: !b.disabled,
       reusable: s.reusable,
+      rearm: splitRearm(s.rearmSeconds),
       trigger: {
         dispositions: ALLOWED_DISPOSITIONS.filter((d) => ctx.dispositions[d]).map(String),
         actorTypes: s.trigger.actorTypes ?? [],
@@ -225,6 +229,8 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       detectionLink: linkView(links.detection),
       effectStrip: this.#strip("effect", links.effect, getEffectRegion(b)),
       detectionStrip: this.#strip("detection", links.detection, b.scene?.regions?.get(b.system.detection.regionId)),
+      rearmUnits: toOptions(Object.keys(REARM_UNITS).map((u) => ({ value: u, label: L(`SARGAS_TRAPZORS.Config.RearmUnit.${u}`) })), v.rearm.unit),
+      rearmIn: this.#rearmIn(b),
       anchorHint: L(`SARGAS_TRAPZORS.Config.Anchor.hint.${v.effect.anchor}`),
       kindHint: L(`SARGAS_TRAPZORS.Config.Kind.hint.${v.payload.kind}`),
       lastFired: b.system.lastFired ? relativeTime(b.system.lastFired.at) : L("SARGAS_TRAPZORS.Config.Never"),
@@ -235,6 +241,14 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       actorTypes,
       soundPath: v.payload.soundPath ?? ""
     });
+  }
+
+  /** "re-arms in ..." for a spent trap with a timer; null otherwise. */
+  #rearmIn(b) {
+    const s = b.system;
+    if (s.status !== "spent") return null;
+    const left = rearmRemaining({ rearmSeconds: s.rearmSeconds, firedWorldTime: s.lastFired?.worldTime ?? null, now: game.time.worldTime });
+    return left === null ? null : L("SARGAS_TRAPZORS.Manager.RearmsIn", { time: formatDuration(left) });
   }
 
   /** Status strip for a linked area. @param {"effect"|"detection"} role */
@@ -270,9 +284,26 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
     let note = null;
     if (actorUuid && !actorOk) note = L("SARGAS_TRAPZORS.Config.HazardBrokenActor");
     else if (itemId && !itemOk) note = L("SARGAS_TRAPZORS.Config.HazardBrokenItem");
+    let summary = null;
+    const adapter = getAdapter();
+    if (actorOk && adapter.capabilities.hazard) {
+      const info = adapter.describeHazard(actor);
+      if (info) {
+        const rank = info.minRank > 0
+          ? L(`SARGAS_TRAPZORS.Config.Rank.${RANK_KEYS[info.minRank]}`)
+          : L("SARGAS_TRAPZORS.Hazard.NoMinRank");
+        summary = L("SARGAS_TRAPZORS.Hazard.Summary", {
+          kind: L(`SARGAS_TRAPZORS.Browser.Kind.${info.kind}`),
+          level: info.level,
+          dc: info.stealthDC ?? "?",
+          rank
+        });
+      }
+    }
     return {
       actors: toOptions(list, actorUuid),
       items: toOptions(items, itemId),
+      summary,
       hasActor: actorOk,
       broken: !!note,
       note
@@ -359,6 +390,33 @@ export class TrapConfig extends HandlebarsApplicationMixin(DocumentSheetV2) {
       console.error(err);
       ui.notifications.error(err.message, { console: false });
     }
+    await this.render();
+  }
+
+  /** Overwrite detection and lifecycle settings from the hazard picked in the Payload tab. */
+  static async #onConfigureFromHazard() {
+    const actorUuid = this.element.querySelector('[name="payload.hazard.actorUuid"]')?.value;
+    const actor = actorUuid ? await fromUuid(actorUuid) : null;
+    if (!actor) {
+      ui.notifications.warn(L("SARGAS_TRAPZORS.Hazard.PickFirst"));
+      return;
+    }
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: L("SARGAS_TRAPZORS.Hazard.ConfigureTitle") },
+      content: `<p>${foundry.utils.escapeHTML(L("SARGAS_TRAPZORS.Hazard.ConfigureBody", { name: actor.name }))}</p>`,
+      rejectClose: false,
+      modal: true
+    });
+    if (!ok) return;
+    try {
+      await configureTrapFromHazard(this.document, actor);
+    } catch (err) {
+      console.error(err);
+      ui.notifications.error(err.message, { console: false });
+      return;
+    }
+    this.#draft = null;
+    this.#dirty = false;
     await this.render();
   }
 

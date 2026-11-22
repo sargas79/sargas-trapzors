@@ -145,3 +145,34 @@
 .application.trap-config { max-height: calc(100vh - 110px); }
 .application.trap-config .window-content { overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
 .application.trap-config .window-content > .tab.active { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+/* Trap Manager tabs and compendium browser */
+.trap-manager .window-content { display: flex; flex-direction: column; min-height: 0; gap: 6px; }
+.trap-manager .window-content > nav.tabs { flex: 0 0 auto; }
+.trap-manager .window-content > .tab.active { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.trap-manager .st-notice { margin: 12px; }
+.trap-manager .st-filterbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.trap-manager .st-filterbar input[type="search"] { flex: 1 1 160px; min-width: 120px; }
+.trap-manager .st-filterbar input[type="number"] { width: 64px; }
+.trap-manager .st-filterbar select { flex: 0 1 170px; min-width: 0; }
+.trap-manager .st-inline { display: inline-flex; align-items: center; gap: 4px; color: var(--st-muted); }
+.trap-manager .st-results { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+.trap-manager .st-results[hidden] { display: none; }
+.trap-manager .st-count { margin: 0; }
+.trap-manager .st-hz-row {
+  display: grid; grid-template-columns: 40px minmax(140px, 2fr) 70px minmax(150px, 2fr) 90px auto;
+  gap: 10px; align-items: center;
+  padding: 6px 12px; background: var(--st-bg-card); border: 1px solid var(--st-border); border-radius: 6px;
+}
+.trap-manager .st-hz-img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid var(--st-border); }
+.trap-manager .st-hz-main { display: flex; flex-direction: column; min-width: 0; }
+.trap-manager .st-hz-main .st-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trap-manager .st-hz-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.trap-manager .st-hz-level, .trap-manager .st-hz-dc { color: var(--st-muted); font-size: 12px; }
+.trap-manager .st-kind-trap { background: var(--st-pending-bg); color: var(--st-pending-fg); }
+.trap-manager .st-kind-haunt { background: var(--st-spent-bg); color: var(--st-spent-fg); }
+.trap-manager .st-kind-environmental { background: var(--st-armed-bg); color: var(--st-armed-fg); }
+.trap-manager .st-kind-other { background: transparent; color: var(--st-muted); border: 1px solid var(--st-border); }
+.trap-manager .st-trait { background: transparent; color: var(--st-muted); border: 1px solid var(--st-border); font-weight: 400; }
+.trap-manager .st-more { text-align: center; padding: 6px 0 12px; }
+.trap-config .st-hazard-summary { margin: 0 0 6px; }

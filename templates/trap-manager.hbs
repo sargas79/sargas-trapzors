@@ -1,3 +1,4 @@
+<section class="tab {{tab.cssClass}}" data-tab="scene" data-group="primary">
 <div class="st-manager">
   <div class="st-toolbar">
     <input type="search" name="filter" value="{{filter}}" placeholder="{{localize "SARGAS_TRAPZORS.Manager.Filter"}}" aria-label="{{localize "SARGAS_TRAPZORS.Manager.Filter"}}">
@@ -35,6 +36,7 @@
           <div class="st-menu" role="menu" popover="manual">
             <button type="button" role="menuitem" data-action="pan"><i class="fa-solid fa-location-crosshairs" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.pan"}}</button>
             <button type="button" role="menuitem" data-action="preview"><i class="fa-solid fa-eye" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.preview"}}</button>
+            {{#if isHazard}}<button type="button" role="menuitem" data-action="disableChecks"><i class="fa-solid fa-unlock-keyhole" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.disableChecks"}}</button>{{/if}}
             <button type="button" role="menuitem" data-action="duplicate"><i class="fa-solid fa-copy" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.duplicate"}}</button>
             <button type="button" role="menuitem" data-action="{{#if disabled}}enable{{else}}disable{{/if}}"><i class="fa-solid fa-power-off" inert></i> {{toggleLabel}}</button>
             <button type="button" role="menuitem" class="st-danger-text" data-action="delete"><i class="fa-solid fa-trash" inert></i> {{localize "SARGAS_TRAPZORS.Manager.Action.delete"}}</button>
@@ -47,3 +49,4 @@
     {{/each}}
   </div>
 </div>
+</section>

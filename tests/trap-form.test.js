@@ -138,3 +138,26 @@ test("trapToFormContext", () => {
   assert.deepEqual(c.dispositions, { "-2": false, "-1": true, "0": false, "1": true });
   assert.deepEqual(c.actorTypes, ["npc"]);
 });
+
+test("re-arm timer", async () => {
+  const { splitRearm } = await import("../scripts/core/trap-form.js");
+  const f = base();
+  assert.equal(formToTrapUpdate(f).update["system.rearmSeconds"], null);
+  f.rearm = { value: "", unit: "hours" };
+  assert.equal(formToTrapUpdate(f).update["system.rearmSeconds"], null);
+  f.rearm = { value: "2", unit: "hours" };
+  assert.equal(formToTrapUpdate(f).update["system.rearmSeconds"], 7200);
+  f.rearm = { value: "1.5", unit: "minutes" };
+  assert.equal(formToTrapUpdate(f).update["system.rearmSeconds"], 90);
+  f.rearm = { value: "1", unit: "days" };
+  assert.equal(formToTrapUpdate(f).update["system.rearmSeconds"], 86400);
+  for (const bad of [{ value: "0", unit: "hours" }, { value: "-1", unit: "hours" }, { value: "x", unit: "hours" }, { value: "1", unit: "weeks" }]) {
+    f.rearm = bad;
+    assert.deepEqual(errs(formToTrapUpdate(f)), ["rearm.value:Rearm"]);
+  }
+  assert.deepEqual(splitRearm(null), { value: "", unit: "minutes" });
+  assert.deepEqual(splitRearm(86400), { value: 1, unit: "days" });
+  assert.deepEqual(splitRearm(7200), { value: 2, unit: "hours" });
+  assert.deepEqual(splitRearm(90), { value: 90, unit: "seconds" });
+  assert.deepEqual(splitRearm(600), { value: 10, unit: "minutes" });
+});

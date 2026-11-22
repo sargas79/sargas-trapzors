@@ -11,7 +11,7 @@ import { STATUS } from "./constants.js";
  * @property {string} status
  * @property {boolean} reusable
  * @property {PendingEntry[]} pending
- * @property {{at:number, tokenUuids:string[]}|null} lastFired
+ * @property {{at:number, tokenUuids:string[], worldTime:number|null}|null} lastFired
  * @property {{checked:string[]}} detection
  */
 
@@ -56,9 +56,10 @@ export function transition(state, action) {
       if (state.disabled) return reject(state, "disabled");
       if (state.status !== STATUS.PENDING && state.status !== STATUS.ARMED) return reject(state, "not-fireable");
       const next = clone(state);
-      next.status = state.reusable ? STATUS.ARMED : STATUS.SPENT;
+      // A re-arm timer makes even a reusable trap wait (spent) until the timer elapses.
+      next.status = state.reusable && state.rearmSeconds == null ? STATUS.ARMED : STATUS.SPENT;
       next.pending = [];
-      next.lastFired = { at: action.at, tokenUuids: [...(action.tokenUuids ?? [])] };
+      next.lastFired = { at: action.at, tokenUuids: [...(action.tokenUuids ?? [])], worldTime: action.worldTime ?? null };
       return accept(next, ["fire"]);
     }
     case "ignore": {

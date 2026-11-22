@@ -1,6 +1,6 @@
 /** Pure constants (no Foundry globals). */
 export const MODULE_ID = "sargas-trapzors";
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /** @enum {string} */
 export const STATUS = Object.freeze({ ARMED: "armed", PENDING: "pending", SPENT: "spent" });

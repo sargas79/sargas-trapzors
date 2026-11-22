@@ -12,6 +12,7 @@ export function defaultTrapSystem() {
     revealed: false,
     pending: [],
     lastFired: null,
+    rearmSeconds: null,
     trigger: {
       dispositions: [DISPOSITIONS.FRIENDLY],
       actorTypes: null,

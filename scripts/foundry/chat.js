@@ -45,13 +45,29 @@ function selectTokens(uuids) {
   for (const t of docs) t.object?.control({ releaseOthers: false });
 }
 
+/** Enrich hazard HTML (so @Check links become buttons). @param {string} html @param {Actor} [actor] */
+export async function enrichHazardHTML(html, actor) {
+  return foundry.applications.ux.TextEditor.implementation.enrichHTML(String(html ?? ""), { relativeTo: actor ?? undefined });
+}
+
+/** Public card with a hazard's disable checks so players can roll them. */
+export async function postDisableChecks({ trapName, html, actor }) {
+  const body = await enrichHazardHTML(html, actor);
+  const content = `<p><strong>${esc(L("SARGAS_TRAPZORS.Hazard.DisableTitle", { trap: trapName }))}</strong></p>${body}`;
+  return ChatMessage.create({ content, speaker: ChatMessage.getSpeaker({ alias: trapName }) });
+}
+
 /** GM-only detection result. Plain content (no rolls field), so players see no placeholder. */
-export async function postDetectionResult({ token, trapName, trapUuid, total, dc, success }) {
+export async function postDetectionResult({ token, trapName, trapUuid, total, dc, success, disableHTML = "", actor = null }) {
   const key = success ? "SARGAS_TRAPZORS.Detection.Noticed" : "SARGAS_TRAPZORS.Detection.NotNoticed";
   let content = `<p>${esc(L(key, { token, trap: trapName, total, dc }))}</p>`;
   if (success) {
     content += `<button type="button" data-action="sargas-trapzors-reveal" data-trap-uuid="${esc(trapUuid)}">`
       + `<i class="fa-solid fa-eye"></i> ${esc(L("SARGAS_TRAPZORS.Detection.Reveal"))}</button>`;
+  }
+  if (success && String(disableHTML).trim()) {
+    const body = await enrichHazardHTML(disableHTML, actor);
+    content += `<hr><p><strong>${esc(L("SARGAS_TRAPZORS.Hazard.DisableHeading"))}</strong></p>${body}`;
   }
   return ChatMessage.create({ content, whisper: gmIds(), speaker: ChatMessage.getSpeaker({ alias: trapName }) });
 }

@@ -1,0 +1,25 @@
+<p class="st-muted st-count" role="status">{{count}}</p>
+{{#each rows}}
+<div class="st-hz-row" data-uuid="{{uuid}}">
+  <img class="st-hz-img" src="{{img}}" alt="" loading="lazy" width="40" height="40">
+  <div class="st-hz-main">
+    <strong class="st-name">{{name}}</strong>
+    <span class="st-muted">{{packTitle}}</span>
+  </div>
+  <div class="st-hz-level">{{levelLabel}}</div>
+  <div class="st-hz-pills">
+    <span class="st-pill st-kind st-kind-{{kind}}">{{kindLabel}}</span>
+    {{#each traits}}<span class="st-pill st-trait">{{this}}</span>{{/each}}
+  </div>
+  <div class="st-hz-dc">{{stealth}}</div>
+  <div class="st-actions">
+    <button type="button" data-action="openHazard"><i class="fa-solid fa-book-open" inert></i> {{localize "SARGAS_TRAPZORS.Browser.Open"}}</button>
+    <button type="button" class="st-primary" data-action="createFromHazard"><i class="fa-solid fa-triangle-exclamation" inert></i> {{localize "SARGAS_TRAPZORS.Browser.Create"}}</button>
+  </div>
+</div>
+{{else}}
+<p class="st-empty st-muted">{{localize "SARGAS_TRAPZORS.Browser.NoResults"}}</p>
+{{/each}}
+{{#if hasMore}}
+<div class="st-more"><button type="button" data-action="showMore">{{localize "SARGAS_TRAPZORS.Browser.ShowMore" count=remaining}}</button></div>
+{{/if}}

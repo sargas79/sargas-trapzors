@@ -72,6 +72,16 @@
         </select>
       </div>
     </div>
+    {{#if hazard.summary}}<p class="st-muted st-hazard-summary">{{hazard.summary}}</p>{{/if}}
+    <div class="form-group">
+      <label>{{localize "SARGAS_TRAPZORS.Hazard.ConfigureLabel"}}</label>
+      <div class="form-fields">
+        <button type="button" data-action="configureFromHazard" {{#unless editable}}disabled{{/unless}} {{#unless hazard.hasActor}}disabled{{/unless}}>
+          <i class="fa-solid fa-wand-magic-sparkles" inert></i> {{localize "SARGAS_TRAPZORS.Hazard.Configure"}}
+        </button>
+      </div>
+      <p class="hint">{{localize "SARGAS_TRAPZORS.Hazard.ConfigureHint"}}</p>
+    </div>
     {{#if hazard.broken}}
     <p class="st-warning"><i class="fa-solid fa-triangle-exclamation" inert></i> {{hazard.note}}</p>
     {{/if}}

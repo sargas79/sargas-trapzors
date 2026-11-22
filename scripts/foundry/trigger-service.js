@@ -1,6 +1,7 @@
 // Foundry-dependent. Never import from tests.
 // Runs on the active GM only: batches validated triggers, persists them, shows the confirm prompt.
 import { TRAP_TYPE } from "../core/constants.js";
+import { rearmDue } from "../core/hazard-info.js";
 import { createDeduper, createBatcher } from "../core/dedupe.js";
 import { transition } from "../core/trap-state.js";
 import { STATUS } from "../core/constants.js";
@@ -8,7 +9,7 @@ import { ConfirmPrompt } from "../apps/confirm-prompt.js";
 import { isAuthority } from "./authority.js";
 import { fireEffect } from "./effect-area.js";
 import { runPayload, validateFirePayload } from "./payload-service.js";
-import { postGMSummary } from "./chat.js";
+import { postGMSummary, postDetectionNote } from "./chat.js";
 
 let instance = null;
 
@@ -34,6 +35,8 @@ class TriggerService {
     /** @type {Map<string, ConfirmPrompt>} */
     this.prompts = new Map();
   }
+
+  #rearming = false;
 
   hasKey(key) { return this.deduper.has(key); }
 
@@ -181,7 +184,7 @@ class TriggerService {
         case "fire": {
           if (await this.#blockedByValidation(behavior, state.pending)) return "keep";
           const tokenUuids = state.pending.map((e) => e.tokenUuid);
-          const r = transition(state, { type: "fire", at: Date.now(), tokenUuids });
+          const r = transition(state, { type: "fire", at: Date.now(), tokenUuids, worldTime: game.time.worldTime });
           if (!r.ok) {
             ui.notifications.warn(L("SARGAS_TRAPZORS.Notify.CannotFire", { reason: r.reason }));
             return;
@@ -257,7 +260,9 @@ class TriggerService {
         return;
       }
       const state = TriggerService.#stateOf(current);
-      const r = transition(state, { type: "fire", at: Date.now(), tokenUuids: entries.map((e) => e.tokenUuid) });
+      const r = transition(state, {
+        type: "fire", at: Date.now(), tokenUuids: entries.map((e) => e.tokenUuid), worldTime: game.time.worldTime
+      });
       if (!r.ok) {
         ui.notifications.warn(game.i18n.format("SARGAS_TRAPZORS.Notify.CannotFire", { reason: r.reason }));
         return;
@@ -317,6 +322,34 @@ class TriggerService {
   }
 
   /* ------------------------------------------------------------ */
+
+  /**
+   * Re-arm every spent trap whose game-time timer has elapsed, on every scene. Active GM only.
+   * Not reentrant: overlapping calls (world time can update often) are skipped.
+   */
+  async checkRearms() {
+    if (!isAuthority() || this.#rearming) return;
+    this.#rearming = true;
+    try {
+      const now = game.time.worldTime;
+      for (const scene of game.scenes) {
+        for (const region of scene.regions) {
+          for (const behavior of region.behaviors) {
+            if (behavior.type !== TRAP_TYPE) continue;
+            const s = behavior.system;
+            if (!rearmDue({ status: s.status, rearmSeconds: s.rearmSeconds, firedWorldTime: s.lastFired?.worldTime ?? null, now })) continue;
+            const name = behavior.region?.name || behavior.name;
+            await this.reset(behavior);
+            await postDetectionNote(game.i18n.format("SARGAS_TRAPZORS.Chat.Rearmed", { trap: name }));
+          }
+        }
+      }
+    } catch (err) {
+      this.log.error("re-arm check failed", err);
+    } finally {
+      this.#rearming = false;
+    }
+  }
 
   /** Reopen prompts for every trap still pending (ready, and when GM authority may have changed). */
   async recover() {

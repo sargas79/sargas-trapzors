@@ -55,7 +55,7 @@ test("fire single-use -> spent, clears pending, records lastFired", () => {
   assert.equal(r.ok, true);
   assert.equal(r.state.status, "spent");
   assert.deepEqual(r.state.pending, []);
-  assert.deepEqual(r.state.lastFired, { at: 99, tokenUuids: ["T1"] });
+  assert.deepEqual(r.state.lastFired, { at: 99, tokenUuids: ["T1"], worldTime: null });
   assert.deepEqual(r.effects, ["fire"]);
 });
 
@@ -175,4 +175,16 @@ test("inputs are never mutated", () => {
   transition(s, { type: "reset" });
   transition(s, { type: "disable" });
   assert.deepEqual(s, frozen);
+});
+
+test("fire stores the world time in lastFired", () => {
+  const r = transition(mk(), { type: "fire", at: 5, tokenUuids: [], worldTime: 1234 });
+  assert.equal(r.state.lastFired.worldTime, 1234);
+});
+
+test("a reusable trap with a re-arm timer is spent until re-armed; without one it re-arms at once", () => {
+  const fire = (s) => transition(s, { type: "fire", at: 1, tokenUuids: [], worldTime: 10 });
+  assert.equal(fire(mk({ reusable: true })).state.status, "armed");
+  assert.equal(fire(mk({ reusable: true, rearmSeconds: 60 })).state.status, "spent");
+  assert.equal(fire(mk({ reusable: false, rearmSeconds: 60 })).state.status, "spent");
 });

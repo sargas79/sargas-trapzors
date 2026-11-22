@@ -3,6 +3,12 @@ import { TrapAdapter } from "./adapter-api.js";
 import { buildDamageFormula, buildCheckSyntax, checkHazardLink } from "../core/pf2e-text.js";
 import { checkRequirements, isSuccess } from "../core/detection.js";
 import { buildSaveLine, buildRollFlavor, decideDelivery } from "../core/payload-text.js";
+import { parseMinRank, hazardKind, pickTriggerAction, parseRearmSeconds } from "../core/hazard-info.js";
+import { buildHazardEntry } from "../core/hazard-browser.js";
+
+const INDEX_FIELDS = [
+  "type", "system.traits.value", "system.details.level.value", "system.details.isComplex", "system.attributes.stealth"
+];
 
 const esc = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 const gmIds = () => ChatMessage.getWhisperRecipients("GM").map((u) => u.id);
@@ -24,7 +30,10 @@ const REASON_KEYS = {
 
 export class Pf2eAdapter extends TrapAdapter {
   get id() { return "pf2e"; }
-  get capabilities() { return { roll: true, hazard: true, detection: true }; }
+  get capabilities() { return { roll: true, hazard: true, detection: true, browse: true }; }
+
+  /** Session cache of the compendium hazard index; a Promise so concurrent callers share one build. */
+  #indexPromise = null;
 
   /** @param {import("./adapter-api.js").PayloadContext} ctx */
   async rollPayload({ trapName, payload, test, speaker }) {
@@ -107,6 +116,70 @@ export class Pf2eAdapter extends TrapAdapter {
     const roll = await actor.perception.roll({ dc: { value: dc }, skipDialog: true, createMessage: false });
     const degree = roll.degreeOfSuccess ?? roll.options?.degreeOfSuccess ?? null;
     return { total: roll.total, degree, success: isSuccess(degree) };
+  }
+
+  /** Raw disable HTML of a hazard actor. */
+  getDisableHTML(actor) {
+    return String(actor?.system?.details?.disable ?? "");
+  }
+
+  /** Localised trait name via the system's hazard trait labels, falling back to the slug. */
+  traitLabel(slug) {
+    const key = CONFIG.PF2E?.hazardTraits?.[slug];
+    return key ? game.i18n.localize(key) : String(slug);
+  }
+
+  /**
+   * Everything trap configuration needs from a hazard actor. Null for a non-hazard.
+   * @param {Actor} actor
+   */
+  describeHazard(actor) {
+    if (!actor || actor.type !== "hazard") return null;
+    const sys = actor.system ?? {};
+    const details = sys.details ?? {};
+    const items = (actor.items?.contents ?? []).map((i) => ({
+      id: i.id, type: i.type, actionType: i.system?.actionType?.value ?? null
+    }));
+    const dc = sys.attributes?.stealth?.dc;
+    const resetText = String(details.reset ?? "");
+    const level = Number(details.level?.value);
+    return {
+      kind: hazardKind(sys.traits?.value),
+      level: Number.isFinite(level) ? level : 0,
+      isComplex: !!details.isComplex,
+      stealthDC: typeof dc === "number" && Number.isFinite(dc) ? dc : null,
+      minRank: parseMinRank(sys.attributes?.stealth?.details),
+      actionId: pickTriggerAction(items),
+      disableHTML: this.getDisableHTML(actor),
+      resetText,
+      rearmSeconds: parseRearmSeconds(resetText)
+    };
+  }
+
+  /**
+   * Every hazard in every Actor compendium. Built once per session; `refresh` rebuilds.
+   * @param {{refresh?:boolean}} [opts]
+   * @returns {Promise<import("../core/hazard-browser.js").HazardEntry[]>}
+   */
+  getHazardIndex({ refresh = false } = {}) {
+    if (refresh || !this.#indexPromise) {
+      this.#indexPromise = this.#buildIndex().catch((err) => { this.#indexPromise = null; throw err; });
+    }
+    return this.#indexPromise;
+  }
+
+  async #buildIndex() {
+    const packs = game.packs.filter((p) => p.documentName === "Actor");
+    const perPack = await Promise.all(packs.map(async (pack) => {
+      try {
+        const index = await pack.getIndex({ fields: INDEX_FIELDS });
+        return index.filter((rec) => rec.type === "hazard").map((rec) => buildHazardEntry(rec, pack));
+      } catch (err) {
+        console.warn(`sargas-trapzors | could not index ${pack.collection}`, err);
+        return [];
+      }
+    }));
+    return perPack.flat();
   }
 
   /** Stealth DC of the linked hazard actor (used by detection in P6). */

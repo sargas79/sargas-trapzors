@@ -17,7 +17,8 @@ test("defaults match plan shape and are fresh each call", () => {
   assert.deepEqual(b.trigger.dispositions, [1]);
   assert.equal(b.payload.roll.save.dc, null);
   assert.deepEqual(b.detection.checked, []);
-  assert.equal(b.schemaVersion, 1);
+  assert.equal(b.schemaVersion, 2);
+  assert.equal(b.rearmSeconds, null);
   assert.equal(b.status, "armed");
   assert.equal(b.trigger.actorTypes, null);
   assert.equal(b.effect.revealSeconds, 6);
@@ -26,7 +27,7 @@ test("defaults match plan shape and are fresh each call", () => {
 test("constants", () => {
   assert.deepEqual({ ...STATUS }, { ARMED: "armed", PENDING: "pending", SPENT: "spent" });
   assert.deepEqual({ ...DISPOSITIONS }, { SECRET: -2, HOSTILE: -1, NEUTRAL: 0, FRIENDLY: 1 });
-  assert.equal(CURRENT_SCHEMA_VERSION, 1);
+  assert.equal(CURRENT_SCHEMA_VERSION, 2);
 });
 
 test("migration fills missing fields without overwriting", () => {
@@ -53,7 +54,7 @@ test("migration preserves explicit null and false values", () => {
   const { data } = migrateTrapSystem(input);
   assert.deepEqual(data.trigger.actorTypes, ["npc"]);
   assert.equal(data.reusable, true);
-  assert.equal(data.schemaVersion, 1);
+  assert.equal(data.schemaVersion, 2);
 });
 
 test("complete current data is not migrated", () => {
@@ -70,4 +71,18 @@ test("newer schema version is unsupported and untouched", () => {
   assert.equal(r.unsupported, true);
   assert.equal(r.data, input);
   assert.deepEqual(input, { schemaVersion: 99, foo: 1 });
+});
+
+test("a v1 object migrates to v2 with the re-arm fields", () => {
+  const v1 = defaultTrapSystem();
+  delete v1.rearmSeconds;
+  v1.schemaVersion = 1;
+  v1.status = "spent";
+  v1.lastFired = { at: 5, tokenUuids: [] };
+  const { data, migrated } = migrateTrapSystem(v1);
+  assert.equal(migrated, true);
+  assert.equal(data.schemaVersion, 2);
+  assert.equal(data.rearmSeconds, null);
+  assert.equal(data.status, "spent");
+  assert.deepEqual(data.lastFired, { at: 5, tokenUuids: [] });
 });

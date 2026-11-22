@@ -44,9 +44,11 @@ export default class TrapBehaviorType extends foundry.data.regionBehaviors.Regio
         userId: str(),
         at: new fields.NumberField({ required: true, nullable: false, initial: 0 })
       }), { required: true, initial: () => [] }),
+      rearmSeconds: new fields.NumberField({ required: true, nullable: true, integer: true, min: 0, initial: null }),
       lastFired: new fields.SchemaField({
         at: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
-        tokenUuids: new fields.ArrayField(str(), { required: true, initial: () => [] })
+        tokenUuids: new fields.ArrayField(str(), { required: true, initial: () => [] }),
+        worldTime: new fields.NumberField({ required: true, nullable: true, initial: null })
       }, { required: true, nullable: true, initial: null }),
       trigger: new fields.SchemaField({
         dispositions: new fields.ArrayField(
