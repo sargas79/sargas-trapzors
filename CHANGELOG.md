@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 — 2026-11-22
+
+### Changed
+
+- The README is shorter and describes the features. The module code is unchanged from 0.4.0.
+
 ## 0.4.0 — 2026-11-22
 
 ### Added
