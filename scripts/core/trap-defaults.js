@@ -12,6 +12,7 @@ export function defaultTrapSystem() {
     revealed: false,
     pending: [],
     lastFired: null,
+    encounter: { tokenId: null, combatId: null },
     rearmSeconds: null,
     trigger: {
       dispositions: [DISPOSITIONS.FRIENDLY],
@@ -28,7 +29,7 @@ export function defaultTrapSystem() {
       flavor: "",
       soundPath: null,
       roll: { damage: "", damageType: "", save: { statistic: "reflex", dc: null, basic: true } },
-      hazard: { actorUuid: null, itemId: null, strikeTargets: "affected" }
+      hazard: { actorUuid: null, itemId: null, strikeTargets: "affected", encounter: { enabled: true, add: "triggering" } }
     },
     detection: {
       enabled: false,

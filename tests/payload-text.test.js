@@ -56,7 +56,7 @@ test("base adapter throws typed errors", async () => {
   await assert.rejects(a.rollPayload({}), UnsupportedPayloadError);
   await assert.rejects(a.postHazardAction({}), (e) => e.operation === "postHazardAction");
   assert.throws(() => a.getStealthDC({}), UnsupportedPayloadError);
-  assert.deepEqual(a.capabilities, { roll: false, hazard: false, detection: false, browse: false });
+  assert.deepEqual(a.capabilities, { roll: false, hazard: false, detection: false, browse: false, encounter: false });
 });
 
 test("summary header and blocked flag", () => {

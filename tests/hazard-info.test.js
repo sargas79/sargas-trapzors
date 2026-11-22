@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  parseMinRank, hazardKind, pickTriggerAction, parseRearmSeconds, rearmDue, rearmRemaining, formatDuration, stripHtml
+  parseMinRank, hazardKind, pickTriggerAction, parseRearmSeconds, rearmDue, rearmRemaining, formatDuration, stripHtml, parseRoutineActions
 } from "../scripts/core/hazard-info.js";
 
 test("parseMinRank", () => {
@@ -72,4 +72,15 @@ test("rearmRemaining and formatDuration", () => {
   assert.equal(formatDuration(90061), "1d 1h");
   assert.equal(formatDuration(0), "0s");
   assert.equal(stripHtml("<p>a&nbsp;<b>b</b></p>"), "a b");
+});
+
+test("parseRoutineActions", () => {
+  assert.equal(parseRoutineActions("<p><strong>Routine</strong> (3 actions) The pillar spins.</p>"), 3);
+  assert.equal(parseRoutineActions("(1 action) The pit fills."), 1);
+  assert.equal(parseRoutineActions("<p>(2&nbsp;actions)</p>".replace("&nbsp;", " ")), 2);
+  assert.equal(parseRoutineActions("<p>(<em>3</em> actions)</p>"), null);
+  assert.equal(parseRoutineActions("<p>The hazard acts on its initiative.</p>"), null);
+  assert.equal(parseRoutineActions("(0 actions)"), null);
+  assert.equal(parseRoutineActions(""), null);
+  assert.equal(parseRoutineActions(undefined), null);
 });

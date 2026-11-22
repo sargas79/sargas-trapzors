@@ -11,6 +11,7 @@ import { TrapConfig } from "./apps/trap-config.js";
 import { registerSceneControls, createTrapFromRegion, openTrapManager } from "./apps/scene-controls.js";
 import { createTriggerService } from "./foundry/trigger-service.js";
 import { configureTrapFromHazard, importHazard } from "./foundry/hazard-traps.js";
+import { registerEncounterHooks } from "./foundry/hazard-encounter.js";
 import { registerAnimationSocket } from "./foundry/animations.js";
 import { debounce } from "./apps/ui-helpers.js";
 
@@ -73,6 +74,7 @@ Hooks.once("ready", () => {
   registerLinkedRegionHooks({ log });
   cleanupOrphans({ log }).catch((err) => log.error("orphan cleanup failed", err));
   createDetectionService({ log });
+  registerEncounterHooks({ log });
   registerChatHooks({ onReveal: (uuid) => reveal(uuid) });
   const service = createTriggerService({ log });
   service.recover().catch((err) => log.error("recovery failed", err));

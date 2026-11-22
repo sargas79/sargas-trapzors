@@ -2,6 +2,7 @@
 import { DISPOSITIONS } from "./constants.js";
 import { getPreset, ANIMATION_MODES } from "./animation-presets.js";
 import { STRIKE_TARGET_MODES } from "./pf2e-text.js";
+import { ENCOUNTER_ADD_MODES } from "./encounter.js";
 
 export const ALLOWED_DISPOSITIONS = Object.freeze([-2, -1, 0, 1]);
 export const ANCHORS = Object.freeze(["fixed", "token"]);
@@ -116,6 +117,11 @@ export function formToTrapUpdate(formData, ctx = {}) {
   if (kind === "roll" && !damage) err("payload.roll.damage", "DamageRequired");
   const strikeTargets = isBlank(hazard.strikeTargets) ? "affected" : asString(hazard.strikeTargets).trim();
   if (!STRIKE_TARGET_MODES.includes(strikeTargets)) err("payload.hazard.strikeTargets", "StrikeTargets");
+  // The Encounter group is only on the sheet for complex hazards: without its select, leave both settings alone.
+  const encounter = hazard.encounter ?? {};
+  const hasEncounter = !isBlank(encounter.add);
+  const encounterAdd = hasEncounter ? asString(encounter.add).trim() : "triggering";
+  if (!ENCOUNTER_ADD_MODES.includes(encounterAdd)) err("payload.hazard.encounter.add", "EncounterAdd");
   if (kind === "hazard") {
     if (!actorUuid) err("payload.hazard.actorUuid", "HazardActorRequired");
     if (!itemId) err("payload.hazard.itemId", "HazardItemRequired");
@@ -178,6 +184,10 @@ export function formToTrapUpdate(formData, ctx = {}) {
     "system.payload.hazard.actorUuid": actorUuid,
     "system.payload.hazard.itemId": itemId,
     "system.payload.hazard.strikeTargets": strikeTargets,
+    ...(hasEncounter ? {
+      "system.payload.hazard.encounter.enabled": bool(encounter.enabled),
+      "system.payload.hazard.encounter.add": encounterAdd
+    } : {}),
     "system.detection.enabled": detEnabled,
     "system.detection.dcSource": dcSource,
     "system.detection.dc": detDc,

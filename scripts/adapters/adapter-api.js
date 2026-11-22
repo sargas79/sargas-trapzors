@@ -24,14 +24,26 @@ export class TrapAdapter {
   /** @type {string} */
   get id() { return "base"; }
 
-  /** @returns {{roll:boolean, hazard:boolean, detection:boolean, browse:boolean}} */
-  get capabilities() { return { roll: false, hazard: false, detection: false, browse: false }; }
+  /** @returns {{roll:boolean, hazard:boolean, detection:boolean, browse:boolean, encounter:boolean}} */
+  get capabilities() { return { roll: false, hazard: false, detection: false, browse: false, encounter: false }; }
 
   /** Post the roll payload. @param {PayloadContext} ctx @returns {Promise<{dc?:number|null, notes?:string[]}|void>} */
   async rollPayload(ctx) { throw new UnsupportedPayloadError(this.id, "rollPayload"); }
 
   /** Post a hazard action. @param {PayloadContext} ctx */
   async postHazardAction(ctx) { throw new UnsupportedPayloadError(this.id, "postHazardAction"); }
+
+  /**
+   * Roll a hazard strike against tokens (routine card). @param {{actor:Actor, item:Item, targets:TokenDocument[], test?:boolean}} ctx
+   * @returns {Promise<{notes:string[]}>}
+   */
+  async rollStrike(ctx) { throw new UnsupportedPayloadError(this.id, "rollStrike"); }
+
+  /** Routine card data for a hazard actor. @param {Actor} actor */
+  describeRoutine(actor) { throw new UnsupportedPayloadError(this.id, "describeRoutine"); }
+
+  /** Roll the hazard combatant's initiative. @param {Combat} combat @param {string} combatantId @returns {Promise<number|null>} */
+  async rollEncounterInitiative(combat, combatantId) { throw new UnsupportedPayloadError(this.id, "rollEncounterInitiative"); }
 
   /** Roll detection. @param {object} ctx */
   async rollDetection(ctx) { throw new UnsupportedPayloadError(this.id, "rollDetection"); }

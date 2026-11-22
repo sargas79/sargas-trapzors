@@ -63,6 +63,7 @@
   background: transparent; color: var(--st-muted); border: 1px solid var(--st-border);
   background-image: repeating-linear-gradient(135deg, transparent 0 4px, var(--st-border) 4px 5px);
 }
+.sargas-trapzors .st-encounter { background: transparent; color: var(--st-pending-fg); border: 1px solid var(--st-pending-fg); }
 .sargas-trapzors .st-revealed { background: transparent; color: var(--st-muted); border: 1px solid var(--st-border); }
 
 /* Buttons */

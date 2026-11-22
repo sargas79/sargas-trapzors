@@ -13,12 +13,14 @@ import { STATUS } from "./constants.js";
  * @property {PendingEntry[]} pending
  * @property {{at:number, tokenUuids:string[], worldTime:number|null}|null} lastFired
  * @property {{checked:string[]}} detection
+ * @property {{tokenId:string|null, combatId:string|null}} [encounter]
  */
 
 const clone = (v) => structuredClone(v);
 
 /** True when a movement trigger may be accepted. */
 export function canTrigger(state) {
+  if (state.encounter?.tokenId) return false; // a complex hazard's encounter is running
   return !state.disabled && (state.status === STATUS.ARMED || state.status === STATUS.PENDING);
 }
 

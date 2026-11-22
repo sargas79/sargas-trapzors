@@ -10,6 +10,7 @@ import { isAuthority } from "./authority.js";
 import { fireEffect } from "./effect-area.js";
 import { runPayload, validateFirePayload } from "./payload-service.js";
 import { postGMSummary, postDetectionNote } from "./chat.js";
+import { startEncounter, previewEncounter, clearEncounter } from "./hazard-encounter.js";
 
 let instance = null;
 
@@ -147,6 +148,11 @@ class TriggerService {
     } catch (err) {
       this.log.error("payload failed", err);
       notes.push(L("SARGAS_TRAPZORS.Chat.PayloadFailed"));
+    }
+    // Complex hazards: a real fire starts the encounter, a test fire only previews it. Neither throws.
+    if (behavior.system.payload.kind === "hazard") {
+      if (test) await previewEncounter(behavior, { triggering, affected, log: this.log });
+      else notes.push(...(await startEncounter(behavior, { triggering, affected, log: this.log })).notes);
     }
     try {
       await postGMSummary({ trapName, triggering, affected, dc, notes, test });
@@ -290,6 +296,7 @@ class TriggerService {
     try {
       const current = await fromUuid(behavior.uuid);
       if (!current) return;
+      await clearEncounter(current, { log: this.log }); // removes the complex hazard's token, if any
       const r = transition(TriggerService.#stateOf(current), { type: "reset" });
       await current.update({
         "system.status": r.state.status,
@@ -337,6 +344,7 @@ class TriggerService {
           for (const behavior of region.behaviors) {
             if (behavior.type !== TRAP_TYPE) continue;
             const s = behavior.system;
+            if (s.encounter?.tokenId) continue; // the hazard's encounter is still running (combat advances game time)
             if (!rearmDue({ status: s.status, rearmSeconds: s.rearmSeconds, firedWorldTime: s.lastFired?.worldTime ?? null, now })) continue;
             const name = behavior.region?.name || behavior.name;
             await this.reset(behavior);

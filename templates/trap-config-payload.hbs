@@ -87,6 +87,26 @@
       <p class="hint">{{localize "SARGAS_TRAPZORS.Config.StrikeTargetsHint"}}</p>
     </div>
     {{/if}}
+    {{#if hazard.isComplex}}
+    <fieldset class="st-encounter">
+      <legend>{{localize "SARGAS_TRAPZORS.Config.EncounterGroup"}}</legend>
+      <div class="form-group">
+        <label for="st-encounter-enabled">{{localize "SARGAS_TRAPZORS.Config.EncounterEnabled"}}</label>
+        <div class="form-fields">
+          <input type="checkbox" id="st-encounter-enabled" name="payload.hazard.encounter.enabled" {{#if hazard.encounterEnabled}}checked{{/if}}>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="st-encounter-add">{{localize "SARGAS_TRAPZORS.Config.EncounterAddLabel"}}</label>
+        <div class="form-fields">
+          <select id="st-encounter-add" name="payload.hazard.encounter.add">
+            {{#each hazard.encounterAdd}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </div>
+        <p class="hint">{{localize "SARGAS_TRAPZORS.Config.EncounterHint"}}</p>
+      </div>
+    </fieldset>
+    {{/if}}
     {{#if hazard.summary}}<p class="st-muted st-hazard-summary">{{hazard.summary}}</p>{{/if}}
     <div class="form-group">
       <label>{{localize "SARGAS_TRAPZORS.Hazard.ConfigureLabel"}}</label>

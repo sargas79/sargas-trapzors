@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Complex hazards** (pf2e/sf2e): a trap made from a complex hazard now starts an encounter when it fires, if the new **Encounter** setting on the Payload tab is on (the default). The hazard's reaction or strike runs first, then a hidden hazard token is placed in the trigger area, added with the triggering (default) or affected creatures to the scene's encounter (one is created, not started, if needed) and its Stealth initiative is rolled. The trap cannot trigger again until the hazard ends.
+- **Routine card**: on the hazard's turn the active GM gets a whispered card with the routine text (checks and rolls are clickable), the action count, **Strike** and **Post** buttons for the hazard's strikes and actions, **Disable checks** and **End hazard**. Players never see it. Strikes roll against your targeted tokens, else the effect area, else the trigger area.
+- **End hazard** removes the hazard from the encounter and deletes its token; a re-arm timer then restarts. Also available in the Trap Manager, which shows an **In encounter** badge. Deleting the encounter or resetting the trap removes the token too.
+- Fire as test previews the encounter (who would be added, the hazard's Stealth modifier, the routine) to GMs only, with no token or encounter.
+- Schema version 3 (adds the encounter settings and state; existing traps keep their behavior).
+
+### Fixed
+
+- Chat buttons (Reveal, Select tokens, the routine card's buttons) now work on messages rendered before the module was ready, such as the chat history after a reload.
+
 ## 0.3.0 — 2026-11-22
 
 ### Added

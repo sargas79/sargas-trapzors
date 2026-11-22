@@ -4,7 +4,7 @@ import { buildSaveLine, buildRollFlavor, decideDelivery } from "../core/payload-
 
 export class GenericAdapter extends TrapAdapter {
   get id() { return "generic"; }
-  get capabilities() { return { roll: true, hazard: false, detection: false, browse: false }; }
+  get capabilities() { return { roll: true, hazard: false, detection: false, browse: false, encounter: false }; }
 
   /**
    * Evaluate and post the damage formula. The DC is returned for the GM summary only, never put on the card.

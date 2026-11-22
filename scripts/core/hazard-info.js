@@ -5,6 +5,14 @@ export function stripHtml(html) {
   return String(html ?? "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Action count from a routine such as "(3 actions)" or "(1 action)"; null when none is named. */
+export function parseRoutineActions(html) {
+  const m = /\((\d+)\s+actions?\)/i.exec(stripHtml(html));
+  if (!m) return null;
+  const n = Number.parseInt(m[1], 10);
+  return n > 0 ? n : null;
+}
+
 const RANKS = Object.freeze({ trained: 1, expert: 2, master: 3, legendary: 4 });
 
 /** Minimum proficiency rank named in a stealth details string (0 when none). */
